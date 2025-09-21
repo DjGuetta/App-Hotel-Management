@@ -1,0 +1,216 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.example.hoteru"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="24"
+9        android:targetSdkVersion="36" />
+10    <!-- These give your app permission to use key device features: -->
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:5:5-66
+11-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:5:22-64
+12    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+12-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:6:5-78
+12-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:6:22-76
+13    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+13-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:7:5-80
+13-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:7:22-78
+14    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+14-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:6:5-78
+14-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:6:22-76
+15    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+15-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:7:5-80
+15-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:7:22-78
+16
+17    <!-- Include required permissions for Google Maps API to run. -->
+18    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+18-->[com.google.android.gms:play-services-maps:18.1.0] C:\Users\yefer\.gradle\caches\8.13\transforms\398ce3976cde27f1a21fb3c26eb27b6b\transformed\play-services-maps-18.1.0\AndroidManifest.xml:23:5-79
+18-->[com.google.android.gms:play-services-maps:18.1.0] C:\Users\yefer\.gradle\caches\8.13\transforms\398ce3976cde27f1a21fb3c26eb27b6b\transformed\play-services-maps-18.1.0\AndroidManifest.xml:23:22-76
+19
+20    <uses-feature
+20-->[com.google.android.gms:play-services-maps:18.1.0] C:\Users\yefer\.gradle\caches\8.13\transforms\398ce3976cde27f1a21fb3c26eb27b6b\transformed\play-services-maps-18.1.0\AndroidManifest.xml:26:5-28:35
+21        android:glEsVersion="0x00020000"
+21-->[com.google.android.gms:play-services-maps:18.1.0] C:\Users\yefer\.gradle\caches\8.13\transforms\398ce3976cde27f1a21fb3c26eb27b6b\transformed\play-services-maps-18.1.0\AndroidManifest.xml:27:9-41
+22        android:required="true" />
+22-->[com.google.android.gms:play-services-maps:18.1.0] C:\Users\yefer\.gradle\caches\8.13\transforms\398ce3976cde27f1a21fb3c26eb27b6b\transformed\play-services-maps-18.1.0\AndroidManifest.xml:28:9-32
+23
+24    <queries>
+24-->[com.google.android.gms:play-services-maps:18.1.0] C:\Users\yefer\.gradle\caches\8.13\transforms\398ce3976cde27f1a21fb3c26eb27b6b\transformed\play-services-maps-18.1.0\AndroidManifest.xml:30:5-34:15
+25
+26        <!-- Needs to be explicitly declared on Android R+ -->
+27        <package android:name="com.google.android.apps.maps" />
+27-->[com.google.android.gms:play-services-maps:18.1.0] C:\Users\yefer\.gradle\caches\8.13\transforms\398ce3976cde27f1a21fb3c26eb27b6b\transformed\play-services-maps-18.1.0\AndroidManifest.xml:33:9-64
+27-->[com.google.android.gms:play-services-maps:18.1.0] C:\Users\yefer\.gradle\caches\8.13\transforms\398ce3976cde27f1a21fb3c26eb27b6b\transformed\play-services-maps-18.1.0\AndroidManifest.xml:33:18-61
+28    </queries>
+29
+30    <permission
+30-->[androidx.core:core:1.16.0] C:\Users\yefer\.gradle\caches\8.13\transforms\16df0632e45ac4b16acd89d050af6ab2\transformed\core-1.16.0\AndroidManifest.xml:22:5-24:47
+31        android:name="com.example.hoteru.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+31-->[androidx.core:core:1.16.0] C:\Users\yefer\.gradle\caches\8.13\transforms\16df0632e45ac4b16acd89d050af6ab2\transformed\core-1.16.0\AndroidManifest.xml:23:9-81
+32        android:protectionLevel="signature" />
+32-->[androidx.core:core:1.16.0] C:\Users\yefer\.gradle\caches\8.13\transforms\16df0632e45ac4b16acd89d050af6ab2\transformed\core-1.16.0\AndroidManifest.xml:24:9-44
+33
+34    <uses-permission android:name="com.example.hoteru.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+34-->[androidx.core:core:1.16.0] C:\Users\yefer\.gradle\caches\8.13\transforms\16df0632e45ac4b16acd89d050af6ab2\transformed\core-1.16.0\AndroidManifest.xml:26:5-97
+34-->[androidx.core:core:1.16.0] C:\Users\yefer\.gradle\caches\8.13\transforms\16df0632e45ac4b16acd89d050af6ab2\transformed\core-1.16.0\AndroidManifest.xml:26:22-94
+35
+36    <application
+36-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:11:5-38:19
+37        android:allowBackup="true"
+37-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:12:9-35
+38        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+38-->[androidx.core:core:1.16.0] C:\Users\yefer\.gradle\caches\8.13\transforms\16df0632e45ac4b16acd89d050af6ab2\transformed\core-1.16.0\AndroidManifest.xml:28:18-86
+39        android:dataExtractionRules="@xml/data_extraction_rules"
+39-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:13:9-65
+40        android:debuggable="true"
+41        android:extractNativeLibs="false"
+42        android:fullBackupContent="@xml/backup_rules"
+42-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:14:9-54
+43        android:icon="@mipmap/ic_launcher"
+43-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:15:9-43
+44        android:label="@string/app_name"
+44-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:16:9-41
+45        android:roundIcon="@mipmap/ic_launcher_round"
+45-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:17:9-54
+46        android:supportsRtl="true"
+46-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:18:9-35
+47        android:testOnly="true"
+48        android:theme="@style/Theme.Hoteru" >
+48-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:19:9-44
+49        <meta-data
+50            android:name="com.google.android.geo.API_KEY"
+50-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:22:13-58
+51            android:value="AIzaSyAFEeHgSuEnt9OopSYJJvtXVQJCVjL_WKw" />
+51-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:23:13-51
+52        <!-- This tells the Google Maps SDK which API key to use. The SDK looks for this tag to -->
+53        <!-- validate and authorize your app to load map services. -->
+54        <!-- Without this, the SDK will fail silently or throw a “Maps API key not found” error. -->
+55        <activity
+55-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:27:9-37:20
+56            android:name="com.example.hoteru.MainActivity"
+56-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:28:13-41
+57            android:exported="true"
+57-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:29:13-36
+58            android:label="@string/app_name"
+58-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:30:13-45
+59            android:theme="@style/Theme.Hoteru" >
+59-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:31:13-48
+60            <intent-filter>
+60-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:32:13-36:29
+61                <action android:name="android.intent.action.MAIN" />
+61-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:33:17-69
+61-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:33:25-66
+62
+63                <category android:name="android.intent.category.LAUNCHER" />
+63-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:35:17-77
+63-->C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:35:27-74
+64            </intent-filter>
+65        </activity>
+66        <!-- Needs to be explicitly declared on P+ -->
+67        <uses-library
+67-->[com.google.android.gms:play-services-maps:18.1.0] C:\Users\yefer\.gradle\caches\8.13\transforms\398ce3976cde27f1a21fb3c26eb27b6b\transformed\play-services-maps-18.1.0\AndroidManifest.xml:39:9-41:40
+68            android:name="org.apache.http.legacy"
+68-->[com.google.android.gms:play-services-maps:18.1.0] C:\Users\yefer\.gradle\caches\8.13\transforms\398ce3976cde27f1a21fb3c26eb27b6b\transformed\play-services-maps-18.1.0\AndroidManifest.xml:40:13-50
+69            android:required="false" />
+69-->[com.google.android.gms:play-services-maps:18.1.0] C:\Users\yefer\.gradle\caches\8.13\transforms\398ce3976cde27f1a21fb3c26eb27b6b\transformed\play-services-maps-18.1.0\AndroidManifest.xml:41:13-37
+70
+71        <activity
+71-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\yefer\.gradle\caches\8.13\transforms\cddd271755c2fec9b0567f311d9d440c\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:9-173
+72            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+72-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\yefer\.gradle\caches\8.13\transforms\cddd271755c2fec9b0567f311d9d440c\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:19-85
+73            android:exported="false"
+73-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\yefer\.gradle\caches\8.13\transforms\cddd271755c2fec9b0567f311d9d440c\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:146-170
+74            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+74-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\yefer\.gradle\caches\8.13\transforms\cddd271755c2fec9b0567f311d9d440c\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:86-145
+75
+76        <meta-data
+76-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\2344db00fc8b53d3110e4fb6042b3f81\transformed\play-services-basement-18.4.0\AndroidManifest.xml:6:9-122
+77            android:name="com.google.android.gms.version"
+77-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\2344db00fc8b53d3110e4fb6042b3f81\transformed\play-services-basement-18.4.0\AndroidManifest.xml:6:20-65
+78            android:value="@integer/google_play_services_version" />
+78-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\2344db00fc8b53d3110e4fb6042b3f81\transformed\play-services-basement-18.4.0\AndroidManifest.xml:6:66-119
+79
+80        <activity
+80-->[androidx.compose.ui:ui-tooling-android:1.7.8] C:\Users\yefer\.gradle\caches\8.13\transforms\d7dc80510e0b2a6f61c6b8b0c0d7a1b0\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
+81            android:name="androidx.compose.ui.tooling.PreviewActivity"
+81-->[androidx.compose.ui:ui-tooling-android:1.7.8] C:\Users\yefer\.gradle\caches\8.13\transforms\d7dc80510e0b2a6f61c6b8b0c0d7a1b0\transformed\ui-tooling-release\AndroidManifest.xml:24:13-71
+82            android:exported="true" />
+82-->[androidx.compose.ui:ui-tooling-android:1.7.8] C:\Users\yefer\.gradle\caches\8.13\transforms\d7dc80510e0b2a6f61c6b8b0c0d7a1b0\transformed\ui-tooling-release\AndroidManifest.xml:25:13-36
+83
+84        <provider
+84-->[androidx.emoji2:emoji2:1.3.0] C:\Users\yefer\.gradle\caches\8.13\transforms\31f194fb48daa99fdf7f6dff43ec9a4b\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+85            android:name="androidx.startup.InitializationProvider"
+85-->[androidx.emoji2:emoji2:1.3.0] C:\Users\yefer\.gradle\caches\8.13\transforms\31f194fb48daa99fdf7f6dff43ec9a4b\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+86            android:authorities="com.example.hoteru.androidx-startup"
+86-->[androidx.emoji2:emoji2:1.3.0] C:\Users\yefer\.gradle\caches\8.13\transforms\31f194fb48daa99fdf7f6dff43ec9a4b\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+87            android:exported="false" >
+87-->[androidx.emoji2:emoji2:1.3.0] C:\Users\yefer\.gradle\caches\8.13\transforms\31f194fb48daa99fdf7f6dff43ec9a4b\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+88            <meta-data
+88-->[androidx.emoji2:emoji2:1.3.0] C:\Users\yefer\.gradle\caches\8.13\transforms\31f194fb48daa99fdf7f6dff43ec9a4b\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+89                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+89-->[androidx.emoji2:emoji2:1.3.0] C:\Users\yefer\.gradle\caches\8.13\transforms\31f194fb48daa99fdf7f6dff43ec9a4b\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+90                android:value="androidx.startup" />
+90-->[androidx.emoji2:emoji2:1.3.0] C:\Users\yefer\.gradle\caches\8.13\transforms\31f194fb48daa99fdf7f6dff43ec9a4b\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+91            <meta-data
+91-->[androidx.lifecycle:lifecycle-process:2.9.2] C:\Users\yefer\.gradle\caches\8.13\transforms\de46aa20fafcc97a6acf8a202ee93a77\transformed\lifecycle-process-2.9.2\AndroidManifest.xml:29:13-31:52
+92                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+92-->[androidx.lifecycle:lifecycle-process:2.9.2] C:\Users\yefer\.gradle\caches\8.13\transforms\de46aa20fafcc97a6acf8a202ee93a77\transformed\lifecycle-process-2.9.2\AndroidManifest.xml:30:17-78
+93                android:value="androidx.startup" />
+93-->[androidx.lifecycle:lifecycle-process:2.9.2] C:\Users\yefer\.gradle\caches\8.13\transforms\de46aa20fafcc97a6acf8a202ee93a77\transformed\lifecycle-process-2.9.2\AndroidManifest.xml:31:17-49
+94            <meta-data
+94-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:29:13-31:52
+95                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+95-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:30:17-85
+96                android:value="androidx.startup" />
+96-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:31:17-49
+97        </provider>
+98
+99        <activity
+99-->[androidx.compose.ui:ui-test-manifest:1.7.8] C:\Users\yefer\.gradle\caches\8.13\transforms\03b339328c28ba7aa78218ef0bdb8311\transformed\ui-test-manifest-1.7.8\AndroidManifest.xml:23:9-25:39
+100            android:name="androidx.activity.ComponentActivity"
+100-->[androidx.compose.ui:ui-test-manifest:1.7.8] C:\Users\yefer\.gradle\caches\8.13\transforms\03b339328c28ba7aa78218ef0bdb8311\transformed\ui-test-manifest-1.7.8\AndroidManifest.xml:24:13-63
+101            android:exported="true" />
+101-->[androidx.compose.ui:ui-test-manifest:1.7.8] C:\Users\yefer\.gradle\caches\8.13\transforms\03b339328c28ba7aa78218ef0bdb8311\transformed\ui-test-manifest-1.7.8\AndroidManifest.xml:25:13-36
+102
+103        <receiver
+103-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:34:9-52:20
+104            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+104-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:35:13-76
+105            android:directBootAware="false"
+105-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:36:13-44
+106            android:enabled="true"
+106-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:37:13-35
+107            android:exported="true"
+107-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:38:13-36
+108            android:permission="android.permission.DUMP" >
+108-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:39:13-57
+109            <intent-filter>
+109-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:40:13-42:29
+110                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+110-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:41:17-91
+110-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:41:25-88
+111            </intent-filter>
+112            <intent-filter>
+112-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:43:13-45:29
+113                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+113-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:44:17-85
+113-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:44:25-82
+114            </intent-filter>
+115            <intent-filter>
+115-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:46:13-48:29
+116                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+116-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:47:17-88
+116-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:47:25-85
+117            </intent-filter>
+118            <intent-filter>
+118-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:49:13-51:29
+119                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+119-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:50:17-95
+119-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\yefer\.gradle\caches\8.13\transforms\ad2340b53d121d3bee3a82e49f56845d\transformed\profileinstaller-1.4.0\AndroidManifest.xml:50:25-92
+120            </intent-filter>
+121        </receiver>
+122    </application>
+123
+124</manifest>

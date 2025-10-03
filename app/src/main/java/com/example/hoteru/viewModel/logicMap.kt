@@ -2,19 +2,14 @@ package com.example.app.viewmodel
 
 // ------------------- IMPORTS -------------------
 // Import for using a ViewModel, which stores and manages UI-related data
-import android.location.Location
-import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.ViewModel
 // Import for launching coroutines scoped to the ViewModel's lifecycle
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.hoteru.model.MongoDBConnection
-import com.example.hoteru.model.map_data.tachiraLatLng
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.CameraPositionState
-import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.Dispatchers
 //import com.google.maps.android.compose.rememberCameraPositionState
 // Import for coroutines with a specific dispatcher for background work
@@ -29,7 +24,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 // Import for working with MongoDB documents
 import org.bson.Document
-import org.bson.types.ObjectId
 
 /**
  * ViewModel that manages hotel data retrieved from MongoDB.
@@ -71,39 +65,59 @@ class MapViewModel : ViewModel() {
     // English: Exposed as `StateFlow` so UI can observe but not modify it directly.
     // Español: Expuesto como `StateFlow` para que la UI pueda observar pero no modificarlo directamente.
     val hotels: StateFlow<List<Document>> = _hotels
+
+    private val _rooms = MutableStateFlow<List<Document>>(emptyList())
+
+    // Publicly exposed read-only version of the hotels list.
+    // English: Exposed as `StateFlow` so UI can observe but not modify it directly.
+    // Español: Expuesto como `StateFlow` para que la UI pueda observar pero no modificarlo directamente.
+    val rooms: StateFlow<List<Document>> = _rooms
     private val _onehotel = MutableStateFlow<Document?>(null)
 
     val onehotel: StateFlow<Document?> = _onehotel
 
     private val _searchText = MutableStateFlow("")
     val searchText = _searchText.asStateFlow()
+
+    private val _selectedLocation = MutableStateFlow<LatLng?>(null)
+
+    // Public immutable state that the Composable observes
+    val selectedLocation: StateFlow<LatLng?> = _selectedLocation
+    private val _visibilityWindow = MutableStateFlow(false)
+
+    // Public immutable state that the Composable observes
+    val visibilityWindow: StateFlow<Boolean?> = _visibilityWindow
+
+    private val _visibilityButton = MutableStateFlow(false)
+
+    // Public immutable state that the Composable observes
+    val visibilityButton: StateFlow<Boolean?> = _visibilityButton
+
+    // Function to update state
+
     private val _isSearching = MutableStateFlow(false)
     val isSearching = _isSearching.asStateFlow()
+    private val _listOfHotels = MutableStateFlow<List<Document>>(emptyList())
 
-    val cameraPositionState = CameraPositionState(
-        position = CameraPosition.fromLatLngZoom(
-            tachiraLatLng,
-            12f
-        )
-    )
+
 
 
 
     val filteredHotels: StateFlow<List<Document>> = searchText
-        .combine(
-            _hotels) { text, hotels ->
-            if(text.isBlank()){
+        .combine(_listOfHotels) { text, hotels ->
+            if (text.isBlank()) {
                 hotels
-            }else{
-                hotels.filter { doc ->
-                    doesMatchSearchQuery(doc, text)
-                }
+            } else {
+                hotels.filter { doc -> doesMatchSearchQuery(doc, text) }
             }
-        }.stateIn(
-            viewModelScope, // tied to ViewModel lifecycle
-            SharingStarted.WhileSubscribed(5000), // active only when collected
-            emptyList() // default value before emission
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
         )
+
+
 
 
 
@@ -131,7 +145,7 @@ class MapViewModel : ViewModel() {
 
             // English: Get the MongoDB collection named "Hotel".
             // Español: Obtiene la colección de MongoDB llamada "Hotel".
-            val collection = MongoDBConnection.getCollection("Hotel")
+            val collection = MongoDBConnection.getCollection("Hotels")
 
             // English: Fetch all documents and convert them to a list.
             // Español: Obtiene todos los documentos y los convierte en una lista.
@@ -146,16 +160,36 @@ class MapViewModel : ViewModel() {
      fun loadDetailsHotel(collection: String, id: String?){
         viewModelScope.launch(Dispatchers.IO) {
             val oneDocument = MongoDBConnection.oneDocument(collection, id)
-
             println(oneDocument)
             _onehotel.value = oneDocument
 
         }
 
     }
+    fun loadRooms(idHotel:String?){
+        viewModelScope.launch(Dispatchers.IO) {
+            val rooms = MongoDBConnection.getRooms(idHotel)
+            println(rooms)
+            _rooms.value = rooms
+        }
+    }
 
     fun onSearchTextChange(text: String) {
         _searchText.value = text
+        if (text.isNotBlank()) {
+            // Only fetch hotels when user types something
+            listOfHotelsSearchEngine()
+        }
+    }
+    fun updateSelectedLocation(location: LatLng?) {
+        _selectedLocation.value = location
+    }
+    fun visibilityWindow(value: Boolean) {
+        _visibilityWindow.value = value
+    }
+
+    fun visibilityButton(value: Boolean) {
+        _visibilityButton.value = value
     }
 
     private fun doesMatchSearchQuery(document: Document, searchText: String): Boolean {
@@ -163,35 +197,37 @@ class MapViewModel : ViewModel() {
         return hotelName.contains(searchText, ignoreCase = true)
     }
 
-    fun moveCamerato(location: LatLng) {
-        println(location)
-        println(location)
-        println(location)
-        println(location)
-        println(location)
-        println(location)
-        println(location)
-        println(location)
-        println("kdsdsd")
+    fun moveCamerato(cameraPositionState: CameraPositionState, location: LatLng) {
+
 
         viewModelScope.launch {
+            val cameraPosition = CameraPosition.Builder()
+                .target(location) // exact LatLng
+                .zoom(35f)        // desired zoom
+                .bearing(0f)      // keep map north-up
+                .tilt(0f)         // flat tilt
+                .build()
             cameraPositionState.animate(
-                update = CameraUpdateFactory.newLatLngZoom(location, 15f),
+                update = CameraUpdateFactory.newCameraPosition(cameraPosition),
                 durationMs = 1000
             )
+            val final = cameraPositionState.position.target
+            println("Camera ended at = ${final.latitude}, ${final.longitude}")
+
+        }
+    }
+    fun listOfHotelsSearchEngine(){
+        viewModelScope.launch(Dispatchers.IO) {
+            val collection = MongoDBConnection.getCollection("Hotels")
+
+            // English: Fetch all documents and convert them to a list.
+            // Español: Obtiene todos los documentos y los convierte en una lista.
+            val results = collection.find().toList()
+            _listOfHotels.value = results
+
         }
     }
 
-
-
-//    fun listOfHotels(){
-//        viewModelScope.launch(Dispatchers.IO) {
-//            val listofDocument = MongoDBConnection.getDocuments("Hotel")
-//            println(listofDocument)
-//            _listOfHotels.value = listofDocument
-//
-//        }
-//    }
 
 
 }

@@ -1,6 +1,5 @@
 package com.example.hoteru.model
 
-import com.mongodb.client.FindIterable
 import com.mongodb.client.MongoClients
 import com.mongodb.client.MongoClient
 import com.mongodb.client.MongoCollection
@@ -31,7 +30,11 @@ object MongoDBConnection {
      * `10.0.2.2` is the special IP address to access the host machine from the Android Emulator.
      * The default MongoDB port `27017` is used.
      */
-    private const val CONNECTION_DATABASE = "mongodb://10.0.2.2:27017"
+//    private const val CONNECTION_DATABASE = "mongodb://10.0.2.2:27017"
+    private const val CONNECTION_DATABASE = "mongodb://192.168.1.4:27017"
+
+
+
 
     /**
      * Name of the MongoDB database used in this project.
@@ -63,8 +66,15 @@ object MongoDBConnection {
         val document = collection.find(eq("_id", id)).firstOrNull()
         return document
     }
+    fun getRooms(hotelId: String?): List<Document> {
+        val collection = database.getCollection("Rooms") // Rooms collection
+        val id = ObjectId(hotelId)
+        // Find all rooms where hotel_id matches the hotel’s _id
+        return collection.find(eq("hotel_id", id)).toList()
+    }
+
     fun getDocuments(name: String?): List<Document> {
-        val collection = database.getCollection("Hotel")
+        val collection = database.getCollection("Hotels")
         return collection.find(eq("name", name)).toList()
     }
 }

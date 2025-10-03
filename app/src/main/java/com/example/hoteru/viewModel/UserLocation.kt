@@ -1,11 +1,17 @@
 package com.example.hoteru.viewModel
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Application
 import android.location.Location
+import android.os.Looper
 import androidx.annotation.RequiresPermission
 import androidx.lifecycle.AndroidViewModel
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,18 +24,39 @@ class UserLocation(application: Application) : AndroidViewModel(application) {
     private val _userLocation = MutableStateFlow<LatLng?>(null)
     val userLocation: StateFlow<LatLng?> = _userLocation
 
-    @RequiresPermission(anyOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+//    @SuppressLint("MissingPermission")
+//    fun updateLocation(){
+//        try {
+//            fusedLocation.lastLocation
+//                .addOnSuccessListener { location ->
+//                    location?.let {
+//                        _userLocation.value = LatLng(it.latitude, it.longitude)
+//                    }
+//                }
+//        } catch (e: SecurityException){
+//            println("it didn't find the user location $e")
+//        }
+//
+//    }
+
+    @SuppressLint("MissingPermission")
     fun updateLocation(){
-        try {
-            fusedLocation.lastLocation
-                .addOnSuccessListener { location ->
-                    location?.let {
-                        _userLocation.value = LatLng(it.latitude, it.longitude)
+      val locationRequest = LocationRequest.Builder(
+          Priority.PRIORITY_HIGH_ACCURACY,
+          5000L
+      ).build()
+        fusedLocation.requestLocationUpdates(
+            locationRequest,
+            object : LocationCallback(){
+                override fun onLocationResult(result: LocationResult) {
+                    result.lastLocation?.let { location ->
+                        _userLocation.value = LatLng(location.latitude, location.longitude)
                     }
                 }
-        } catch (e: SecurityException){
-            println("it didn't find the user location $e")
-        }
+            },
+            Looper.getMainLooper()
+
+        )
 
     }
 

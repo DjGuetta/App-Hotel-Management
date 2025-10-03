@@ -1,7 +1,12 @@
 // ✅ works fine
 
+import android.Manifest
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.pdf.models.ListItem
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -13,13 +18,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+//import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -39,15 +49,26 @@ import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerInfoWindow
+import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import kotlinx.coroutines.launch
 import org.bson.Document
 import org.bson.types.ObjectId
-
+import androidx.compose.material3.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.traceEventEnd
+import androidx.compose.ui.Alignment
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.android.gms.maps.model.SquareCap
 
 
 @Composable
@@ -66,21 +87,9 @@ fun bitmapDescriptorFromVector(
     }
     return BitmapDescriptorFactory.fromBitmap(bitmap)
 }
-//@Composable
-//fun moveCamerato(location: LatLng) {
-//    val mapModel: MapViewModel = viewModel()
-//    LaunchedEffect(location) {
-//        location.let {
-//            mapModel.cameraPositionState.animate(
-//                update = CameraUpdateFactory.newLatLngZoom(location, 15f),
-//                durationMs = 1000
-//            )
-//        }
-//    }
-//}
 
 @Composable
-fun SearchEngine() {
+fun SearchEngine(cameraPositionState: CameraPositionState) {
     val mapModel: MapViewModel = viewModel()
     val searchText by mapModel.searchText.collectAsState()
     val hotels by mapModel.filteredHotels.collectAsState()
@@ -88,6 +97,7 @@ fun SearchEngine() {
      OutlinedTextField(
         value = searchText,
         onValueChange =  mapModel::onSearchTextChange, // updates the state
+//         onValueChange = { newText -> mapModel.onSearchTextChange(searchText) }
         label = { Text("Search a hotel") },
         modifier = Modifier.fillMaxWidth(),
          placeholder = { Text(text = "Search your hotel")},
@@ -95,25 +105,110 @@ fun SearchEngine() {
     Spacer(modifier = Modifier.height(16.dp))
     LazyColumn(modifier = Modifier
         .fillMaxWidth()) {
-        items(hotels){ hotel ->
-            Text(
-                text = "${hotel.getString("name")}",
-                modifier = Modifier
-                    .clickable{
-                        val location = hotel.get("location", Document::class.java)
-                        println(hotel.getString("name"))
+        if (searchText.isNotBlank()) {
+            items(hotels){ hotel ->
+                Text(
+                    text = "${hotel.getString("name")}",
+                    modifier = Modifier
+                        .clickable{
+                            val location = hotel.get("location", Document::class.java)
+                            println(hotel.getString("name"))
+                            println(location)
 
-                        // Safe calls with Elvis operator
-                        val lat = location?.getDouble("latitude") ?: return@clickable
-                        val lon = location?.getDouble("longitude") ?: return@clickable
+                            // Safe calls with Elvis operator
+                            val lat = location?.getDouble("latitude") ?: return@clickable
+                            val lon = location?.getDouble("longitude") ?: return@clickable
+//
 //                        mapModel.setCameraTarget(LatLng(lat, lon))
-                        mapModel.moveCamerato( LatLng(lat, lon))
-                    }
+                            mapModel.moveCamerato( cameraPositionState,LatLng(lat, lon))
+                        }
 
 
                 )
+            }
         }
+
     }
+
+
+}
+
+//@Composable
+//fun DrawWay(location: LatLng){
+//    val userModel: UserLocation = viewModel()
+//    val userlocation by userModel.userLocation.collectAsState()
+//
+//    userlocation?.let { current ->
+//        Polyline(
+//            points = listOf(
+//                current,
+//                location
+//            )
+//            ,color = Color.Blue
+//        )
+//    }
+//}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
+@Composable
+fun DropdowListHotel(navController: NavController, DropDownItems: List<Document>, mapModel: MapViewModel){
+    var isExpanded by remember { mutableStateOf(false) }
+    var selectedText by rememberSaveable { mutableStateOf(DropDownItems.firstOrNull()?.getString("name") ?: "") }
+    val locationPermissionState = rememberPermissionState(
+        Manifest.permission.ACCESS_FINE_LOCATION
+    )
+
+
+    ExposedDropdownMenuBox(
+        expanded = isExpanded,
+        onExpandedChange = {isExpanded = !isExpanded}
+    ){
+        OutlinedTextField(
+            value = selectedText,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Select hotel") },
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded)
+            },
+            modifier = Modifier
+                .menuAnchor()   // ✅ REQUIRED
+        )
+        ExposedDropdownMenu(
+            expanded = isExpanded,
+            onDismissRequest = { isExpanded = false }
+        ) {
+            DropDownItems.forEach { hotel ->
+                DropdownMenuItem(
+                    text = {Text( hotel.getString("name"))},
+                    onClick = {
+                        if (locationPermissionState.status.isGranted){
+                            val location = hotel.get("location", Object::class.java) as? Document
+                            val lat = location?.getDouble("latitude")
+                            val lon = location?.getDouble("longitude")
+                            if (lat != null && lon != null) {
+                                // ✅ Instead of calling DrawWay directly, update state
+//                            selectedLocation = LatLng(lat, lon)
+                                selectedText = hotel.getString("name")
+                                mapModel.updateSelectedLocation(LatLng(lat, lon)) // ✅ updates ViewModel state
+                                mapModel.visibilityWindow(false)
+//
+                            //                                navController.navigate("Home")
+                        }} else {
+                            // 🚨 Ask for permission
+                            locationPermissionState.launchPermissionRequest()
+                        }
+
+                    },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                    )
+
+            }
+        }
+
+    }
+
+
 
 
 }
@@ -123,6 +218,15 @@ fun MapScreen(navController: NavController) {
 // Note: Instantiating manually means no lifecycle management (not recommended for production).
     val mapModel: MapViewModel = viewModel()
     val userModel: UserLocation = viewModel()
+    val selectedLocation by mapModel.selectedLocation.collectAsState()
+    val userLocation by userModel.userLocation.collectAsState()
+    val visibilityWindow by mapModel.visibilityWindow.collectAsState()
+
+
+    LaunchedEffect(Unit) {
+        userModel.updateLocation()
+    }
+
 
 // Collect the StateFlow 'hotels' from the ViewModel as a Compose State,
 // then delegate its current value to the variable 'hotels'.
@@ -133,20 +237,30 @@ fun MapScreen(navController: NavController) {
         position = CameraPosition.fromLatLngZoom(tachiraLatLng, 10f)
     }
 
-    // Use LaunchedEffect to react to changes in the target location
+    val uiSettings by remember {
+        mutableStateOf(
+            MapUiSettings(
+                mapToolbarEnabled = false // 🚫 removes the toolbar (blue arrow + Maps icon)
+            )
+        )
+    }
+
+//    var temporalWindow by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
 
         GoogleMap(
-            Modifier.fillMaxSize(), mapModel.cameraPositionState, properties = MapProperties(
+            Modifier.fillMaxSize(), cameraPositionState, properties = MapProperties(
                 latLngBoundsForCameraTarget = tachiraBounds,
                 minZoomPreference = 8f,
                 maxZoomPreference = 16f
-            )
-        ) {
+            ),
+            uiSettings = uiSettings
 
+
+        ) {
             hotels.forEach { hotel ->
                 val location = hotel.get("location", Object::class.java) as? Document
                 val id = when (val value = hotel["_id"]) {
@@ -159,26 +273,14 @@ fun MapScreen(navController: NavController) {
                 if (location != null) {
                     val lat = location.getDouble("latitude")
                     val lon = location.getDouble("longitude")
-//                    val hotelLocation = LatLng(lat, lon)
                     val markerState = rememberMarkerState(position = LatLng(lat, lon))
-//                    val userLatLng = cameraPositionState.position.target
 
-//                    Marker(
-//                        state = markerState,
-//                        icon = bitmapDescriptorFromVector(LocalContext.current, R.drawable.h),
-//                        title = hotel.getString("name"),
-//                        snippet = hotel.getString("description"),
-////                        onClick = {
-////                            navController.navigate("detailshotel/${id}")
-////                            true
-////                        }
-//                    )
                     MarkerInfoWindow(
                         state = markerState,
                         icon = bitmapDescriptorFromVector(LocalContext.current, R.drawable.h),
-                        onInfoWindowClick = { marker ->
-                            // user tapped anywhere on the info window -> navigate
-                            navController.navigate("detailshotel/$id")
+                        onInfoWindowClick = {
+                            // Whole info window clicked
+                                navController.navigate("detailshotel/$id")
                         }
                     ) { marker ->
                         Column(
@@ -188,15 +290,37 @@ fun MapScreen(navController: NavController) {
                         ) {
                             Text(text = hotel.getString("name") ?: "")
                             Text(text = hotel.getString("description") ?: "")
-
+//
                         }
                     }
-
 
                 }
 
             }
+            userLocation?.let { current ->
+                selectedLocation?.let { dest ->
+                    println("User Location: $current")
+                    println("Destination: $dest")
+                    mapModel.visibilityButton(true)
+                        Marker(
+                            state = rememberMarkerState(position = current),
+                            icon = bitmapDescriptorFromVector(LocalContext.current, R.drawable.user),
+                            title = "You are here",
+                        )
 
+                        // Polyline from user to selected hotel
+                        Polyline(
+                            points = listOf(current, dest),
+                            color = Color.Blue,
+                        )
+
+
+
+
+                }
+            }
+            println("selected location:$selectedLocation")
+            print("selected user location:$userLocation")
 
         }
         Column(
@@ -205,12 +329,57 @@ fun MapScreen(navController: NavController) {
                 .padding(16.dp)
                 .background(Color.White)
         ) {
-            SearchEngine()
+            SearchEngine(cameraPositionState)
+        }
+        Button(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(16.dp)
+                .background(Color.White),
+            onClick = {
+                mapModel.visibilityWindow(true)
+            }
+        ) {
+            Text(text = "->")
+        }
+
+        if (visibilityWindow == true){
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(16.dp)
+                    .background(Color.White),
+            ){
+                DropdowListHotel(navController,hotels, mapModel)
+                Button(onClick = {
+                    mapModel.visibilityWindow(false)
+                }) {
+                    Text("X")
+                }
+
+            }
 
         }
 
+        if (userLocation != null && selectedLocation != null) {
+            Button(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp),
+                onClick = { mapModel.updateSelectedLocation(null) } // remove the way
+            ) {
+                Text("Remove the way")
+            }
+        }
+
+
+
+
+
+
     }
 }
+
 
 
 

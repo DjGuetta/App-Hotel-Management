@@ -13,6 +13,7 @@ INJECTED from C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidMa
 INJECTED from C:\Users\yefer\AndroidStudioProjects\Hoteru\app\src\main\AndroidManifest.xml:2:1-40:12
 MERGED from [com.google.android.gms:play-services-location:21.3.0] C:\Users\yefer\.gradle\caches\8.13\transforms\c938d53ce284b1e23ce0cd15a16b5a3b\transformed\play-services-location-21.3.0\AndroidManifest.xml:2:1-8:12
 MERGED from [io.coil-kt:coil-compose:2.6.0] C:\Users\yefer\.gradle\caches\8.13\transforms\d0010fa43ea329717939e0883b033e9f\transformed\coil-compose-2.6.0\AndroidManifest.xml:2:1-7:12
+MERGED from [com.google.accompanist:accompanist-permissions:0.37.0] C:\Users\yefer\.gradle\caches\8.13\transforms\032bfedcbbf51fb6f5bfb3deedd0e613\transformed\accompanist-permissions-0.37.0\AndroidManifest.xml:17:1-23:12
 MERGED from [androidx.navigation:navigation-common:2.8.0] C:\Users\yefer\.gradle\caches\8.13\transforms\b977992452a01c894039cad3168cd7e2\transformed\navigation-common-2.8.0\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.navigation:navigation-runtime:2.8.0] C:\Users\yefer\.gradle\caches\8.13\transforms\950834eadde54a1160eda59d404f93bb\transformed\navigation-runtime-2.8.0\AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.navigation:navigation-common-ktx:2.8.0] C:\Users\yefer\.gradle\caches\8.13\transforms\4709b606652203d2f13499f6a7978acb\transformed\navigation-common-ktx-2.8.0\AndroidManifest.xml:2:1-7:12
@@ -187,6 +188,8 @@ MERGED from [com.google.android.gms:play-services-location:21.3.0] C:\Users\yefe
 MERGED from [com.google.android.gms:play-services-location:21.3.0] C:\Users\yefer\.gradle\caches\8.13\transforms\c938d53ce284b1e23ce0cd15a16b5a3b\transformed\play-services-location-21.3.0\AndroidManifest.xml:4:5-44
 MERGED from [io.coil-kt:coil-compose:2.6.0] C:\Users\yefer\.gradle\caches\8.13\transforms\d0010fa43ea329717939e0883b033e9f\transformed\coil-compose-2.6.0\AndroidManifest.xml:5:5-44
 MERGED from [io.coil-kt:coil-compose:2.6.0] C:\Users\yefer\.gradle\caches\8.13\transforms\d0010fa43ea329717939e0883b033e9f\transformed\coil-compose-2.6.0\AndroidManifest.xml:5:5-44
+MERGED from [com.google.accompanist:accompanist-permissions:0.37.0] C:\Users\yefer\.gradle\caches\8.13\transforms\032bfedcbbf51fb6f5bfb3deedd0e613\transformed\accompanist-permissions-0.37.0\AndroidManifest.xml:21:5-44
+MERGED from [com.google.accompanist:accompanist-permissions:0.37.0] C:\Users\yefer\.gradle\caches\8.13\transforms\032bfedcbbf51fb6f5bfb3deedd0e613\transformed\accompanist-permissions-0.37.0\AndroidManifest.xml:21:5-44
 MERGED from [androidx.navigation:navigation-common:2.8.0] C:\Users\yefer\.gradle\caches\8.13\transforms\b977992452a01c894039cad3168cd7e2\transformed\navigation-common-2.8.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.navigation:navigation-common:2.8.0] C:\Users\yefer\.gradle\caches\8.13\transforms\b977992452a01c894039cad3168cd7e2\transformed\navigation-common-2.8.0\AndroidManifest.xml:20:5-44
 MERGED from [androidx.navigation:navigation-runtime:2.8.0] C:\Users\yefer\.gradle\caches\8.13\transforms\950834eadde54a1160eda59d404f93bb\transformed\navigation-runtime-2.8.0\AndroidManifest.xml:20:5-44

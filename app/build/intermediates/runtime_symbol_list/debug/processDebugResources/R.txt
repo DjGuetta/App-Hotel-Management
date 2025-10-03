@@ -162,6 +162,7 @@ int drawable notification_template_icon_bg 0x7f040029
 int drawable notification_template_icon_low_bg 0x7f04002a
 int drawable notification_tile_bg 0x7f04002b
 int drawable notify_panel_notification_icon_bg 0x7f04002c
+int drawable user 0x7f04002d
 int id accessibility_action_clickable_span 0x7f050000
 int id accessibility_custom_action_0 0x7f050001
 int id accessibility_custom_action_1 0x7f050002

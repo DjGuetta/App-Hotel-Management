@@ -1,0 +1,5 @@
+# Archivos específicos de Android Studio
+local.properties
+*.iml
+.gradle/
+.idea/

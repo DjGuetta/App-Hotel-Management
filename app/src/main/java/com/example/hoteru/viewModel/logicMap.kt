@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 // Import for working with MongoDB documents
 import org.bson.Document
+import kotlin.let
 
 /**
  * ViewModel that manages hotel data retrieved from MongoDB.
@@ -90,18 +91,22 @@ class MapViewModel : ViewModel() {
 
     private val _visibilityButton = MutableStateFlow(false)
 
-    // Public immutable state that the Composable observes
     val visibilityButton: StateFlow<Boolean?> = _visibilityButton
 
-    // Function to update state
+    private val _visibilitySearchEngine = MutableStateFlow(true)
+    val visibilitySearchEngine: StateFlow<Boolean?> = _visibilitySearchEngine
+
+
+    private val _visibilityPriceFilter = MutableStateFlow(false)
+    val visibilityPriceFilter: StateFlow<Boolean?> = _visibilityPriceFilter
+
+    private val _visibilityRatingFilter = MutableStateFlow(false)
+    val visibilityRatingFilter: StateFlow<Boolean?> = _visibilityRatingFilter
+
 
     private val _isSearching = MutableStateFlow(false)
     val isSearching = _isSearching.asStateFlow()
     private val _listOfHotels = MutableStateFlow<List<Document>>(emptyList())
-
-
-
-
 
     val filteredHotels: StateFlow<List<Document>> = searchText
         .combine(_listOfHotels) { text, hotels ->
@@ -117,8 +122,11 @@ class MapViewModel : ViewModel() {
             initialValue = emptyList()
         )
 
+    val _listOfRoomsUnderTheirPrice = MutableStateFlow<List<Document>>(emptyList())
+    val listOfRoomsUnderTheirPrice: StateFlow<List<Document>> = _listOfRoomsUnderTheirPrice
 
-
+    val _listOfHotelsByRating = MutableStateFlow<List<Document>>(emptyList())
+    val listOfHotelsByRating: StateFlow<List<Document>> = _listOfHotelsByRating
 
 
     init {
@@ -157,7 +165,7 @@ class MapViewModel : ViewModel() {
         }
     }
 
-     fun loadDetailsHotel(collection: String, id: String?){
+     fun loadDetailsDocument(collection: String, id: String?){
         viewModelScope.launch(Dispatchers.IO) {
             val oneDocument = MongoDBConnection.oneDocument(collection, id)
             println(oneDocument)
@@ -190,6 +198,38 @@ class MapViewModel : ViewModel() {
 
     fun visibilityButton(value: Boolean) {
         _visibilityButton.value = value
+    }
+
+    fun visibilitySearchEngine(value: Boolean) {
+        _visibilitySearchEngine.value = value
+    }
+
+    fun visibilityPriceFilter(value: Boolean) {
+        _visibilityPriceFilter.value = value
+    }
+
+    fun visibilityRatingFilter(value: Boolean) {
+        _visibilityRatingFilter.value = value
+    }
+
+    private val _hotelsById = MutableStateFlow<Map<String, Document>>(emptyMap())
+    val hotelsById: StateFlow<Map<String, Document>> = _hotelsById
+
+    fun loadHotelsForRooms(rooms: List<Document>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val map = mutableMapOf<String, Document>()
+            rooms.forEach { r ->
+                val hotelId = r.get("hotel_id")?.toString() ?: return@forEach
+                if (!map.containsKey(hotelId)) {
+                    // Call loadDetailsDocument to update _onehotel
+                    loadDetailsDocument("Hotels", hotelId)
+                    // Get the document from _onehotel
+                    val hotelDoc = _onehotel.value
+                    hotelDoc?.let { map[hotelId] = it }
+                }
+            }
+            _hotelsById.value = map
+        }
     }
 
     private fun doesMatchSearchQuery(document: Document, searchText: String): Boolean {
@@ -227,6 +267,23 @@ class MapViewModel : ViewModel() {
 
         }
     }
+    fun listOfRoomsUnderTheirPrice(minimun: Double, maximun: Double){
+        viewModelScope.launch(Dispatchers.IO) {
+            val collection = MongoDBConnection.getRoomsUnderTheirPrices(minimun, maximun).toList()
+            _listOfRoomsUnderTheirPrice.value = collection
+
+        }
+
+    }
+    fun listOfHotelsByRating(rating: Double){
+        viewModelScope.launch(Dispatchers.IO) {
+            val collection = MongoDBConnection.getHotelsUnderRating(rating).toList()
+            _listOfHotelsByRating.value = collection
+
+        }
+
+    }
+
 
 
 

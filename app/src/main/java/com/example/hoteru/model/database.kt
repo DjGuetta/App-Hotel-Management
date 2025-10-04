@@ -7,6 +7,10 @@ import com.mongodb.client.MongoDatabase
 import org.bson.Document
 import org.bson.types.ObjectId
 import com.mongodb.client.model.Filters.eq
+import com.mongodb.client.model.Filters.and
+import com.mongodb.client.model.Filters.gte
+import com.mongodb.client.model.Filters.lte
+
 /**
  * Singleton object responsible for managing the MongoDB connection in the application.
  *
@@ -23,7 +27,6 @@ import com.mongodb.client.model.Filters.eq
  * @see MongoCollection for working with a MongoDB collection.
  */
 object MongoDBConnection {
-
     /**
      * MongoDB connection string pointing to the database server.
      *
@@ -31,11 +34,7 @@ object MongoDBConnection {
      * The default MongoDB port `27017` is used.
      */
 //    private const val CONNECTION_DATABASE = "mongodb://10.0.2.2:27017"
-    private const val CONNECTION_DATABASE = "mongodb://192.168.1.4:27017"
-
-
-
-
+    private const val CONNECTION_DATABASE = "mongodb://192.168.1.5:27017"
     /**
      * Name of the MongoDB database used in this project.
      */
@@ -69,12 +68,25 @@ object MongoDBConnection {
     fun getRooms(hotelId: String?): List<Document> {
         val collection = database.getCollection("Rooms") // Rooms collection
         val id = ObjectId(hotelId)
-        // Find all rooms where hotel_id matches the hotel’s _id
         return collection.find(eq("hotel_id", id)).toList()
     }
+    fun getRoomsUnderTheirPrices(minimunPrice: Double, maximunPrice: Double): List<Document>{
+        val collection = database.getCollection("Rooms") // Rooms collection
+        return collection.find(
+            and(
+                gte("price", minimunPrice),              // price >= minimumPrice
+                lte("price", maximunPrice)               // price <= maximumPrice
+            )
+        ).toList()
 
-    fun getDocuments(name: String?): List<Document> {
-        val collection = database.getCollection("Hotels")
-        return collection.find(eq("name", name)).toList()
     }
+    fun getHotelsUnderRating(rating: Double): List<Document>{
+        val collection = database.getCollection("Hotels") // Rooms collection
+        return collection.find(eq("rating", rating)).toList()
+    }
+
+//    fun getDocuments(name: String?): List<Document> {
+//        val collection = database.getCollection("Hotels")
+//        return collection.find(eq("name", name)).toList()
+//    }
 }

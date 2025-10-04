@@ -24,20 +24,6 @@ class UserLocation(application: Application) : AndroidViewModel(application) {
     private val _userLocation = MutableStateFlow<LatLng?>(null)
     val userLocation: StateFlow<LatLng?> = _userLocation
 
-//    @SuppressLint("MissingPermission")
-//    fun updateLocation(){
-//        try {
-//            fusedLocation.lastLocation
-//                .addOnSuccessListener { location ->
-//                    location?.let {
-//                        _userLocation.value = LatLng(it.latitude, it.longitude)
-//                    }
-//                }
-//        } catch (e: SecurityException){
-//            println("it didn't find the user location $e")
-//        }
-//
-//    }
 
     @SuppressLint("MissingPermission")
     fun updateLocation(){

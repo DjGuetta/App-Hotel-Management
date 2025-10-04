@@ -284,4 +284,111 @@ object MongoDBConnection {
             Location()
         }
     }
+    // --- FUNCIONES PARA RESERVAS (BOOKINGS) ---
+
+    fun getActiveBookingsByHotel(hotelId: ObjectId): Flow<List<Booking>> = flow {
+        try {
+            val collection = database.getCollection("Bookings")
+            // Buscamos reservas que no estén finalizadas o canceladas
+            val activeStatuses = listOf("CONFIRMED", "CHECKED_IN")
+            val bookings = collection.find(
+                Filters.and(
+                    Filters.eq("hotelId", hotelId),
+                    Filters.`in`("status", activeStatuses)
+                )
+            ).map { doc -> Booking.fromDocument(doc) }.toList()
+            emit(bookings)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error obteniendo reservas activas: ${e.message}")
+            emit(emptyList())
+        }
+    }.flowOn(Dispatchers.IO)
+
+    suspend fun insertBooking(booking: Booking): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val collection = database.getCollection("Bookings")
+            collection.insertOne(booking.toDocument())
+            // Aquí también se debería actualizar el estado de la habitación a "OCUPADA"
+            updateRoomStatus(booking.roomId, "OCUPADA")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error insertando reserva: ${e.message}")
+            false
+        }
+    }
+
+    suspend fun updateBookingStatus(bookingId: ObjectId, newStatus: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val collection = database.getCollection("Bookings")
+            val filter = Filters.eq("_id", bookingId)
+            val update = Document("\$set", Document("status", newStatus))
+            val result = collection.updateOne(filter, update)
+            // Si la reserva se completa o cancela, liberar la habitación
+            if (newStatus == "CHECKED_OUT" || newStatus == "CANCELLED") {
+                val booking = collection.find(filter).first()?.let { Booking.fromDocument(it) }
+                booking?.let {
+                    updateRoomStatus(it.roomId, "DISPONIBLE") // o "LIMPIEZA"
+                }
+            }
+            result.modifiedCount > 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Error actualizando estado de reserva: ${e.message}")
+            false
+        }
+    }
+    // --- FUNCIÓN PARA LA PANTALLA GLOBAL DE RESERVAS ---
+
+    fun getAllActiveBookingDetails(): Flow<List<BookingDetails>> = flow {
+        try {
+            Log.d(TAG, "Obteniendo TODAS las reservas activas...")
+            // 1. Obtener todas las reservas activas
+            val collection = database.getCollection("Bookings")
+            val activeStatuses = listOf("CONFIRMED", "CHECKED_IN")
+            val activeBookings = collection.find(Filters.`in`("status", activeStatuses))
+                .map { Booking.fromDocument(it) }
+                .toList()
+
+            if (activeBookings.isEmpty()) {
+                emit(emptyList())
+                return@flow
+            }
+
+            // 2. Obtener los IDs únicos de hoteles y habitaciones de esas reservas
+            val hotelIds = activeBookings.map { it.hotelId }.distinct()
+            val roomIds = activeBookings.map { it.roomId }.distinct()
+
+            // 3. Obtener los documentos de esos hoteles y habitaciones en una sola consulta
+            val hotels = database.getCollection("Hoteles")
+                .find(Filters.`in`("_id", hotelIds))
+                .map { it.getObjectId("_id") to it.getString("name") }
+                .toList().toMap()
+
+            val rooms = database.getCollection("Rooms")
+                .find(Filters.`in`("_id", roomIds))
+                .map { it.getObjectId("_id") to it.getString("roomNumber") }
+                .toList().toMap()
+
+            // 4. Combinar todo en una lista de BookingDetails
+            val bookingDetails = activeBookings.mapNotNull { booking ->
+                val hotelName = hotels[booking.hotelId]
+                val roomNumber = rooms[booking.roomId]
+                if (hotelName != null && roomNumber != null) {
+                    BookingDetails(
+                        booking = booking,
+                        hotelName = hotelName,
+                        roomNumber = "Hab. $roomNumber"
+                    )
+                } else {
+                    null // Ignorar si no se encuentra el hotel o la habitación
+                }
+            }
+
+            Log.d(TAG, "Se encontraron ${bookingDetails.size} detalles de reservas.")
+            emit(bookingDetails)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error obteniendo detalles de reservas globales: ${e.message}")
+            emit(emptyList())
+        }
+    }.flowOn(Dispatchers.IO)
 }

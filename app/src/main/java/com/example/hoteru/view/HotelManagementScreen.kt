@@ -118,6 +118,7 @@ fun HotelManagementScreen(navController: NavController) {
                         )
                     } else {
                         HotelsListView(
+                            navController = navController,
                             hotels = state.hotels,
                             viewModel = viewModel,
                             onHotelClick = {
@@ -173,6 +174,7 @@ fun HotelManagementScreen(navController: NavController) {
 
 @Composable
 fun HotelsListView(
+    navController: NavController,
     hotels: List<Hotel>,
     viewModel: HotelManagementViewModel,
     onHotelClick: (Hotel) -> Unit,
@@ -195,6 +197,7 @@ fun HotelsListView(
 
         items(hotels, key = { hotel -> hotel._id }) { hotel ->
             HotelCard(
+                navController = navController,
                 hotel = hotel,
                 viewModel = viewModel,
                 onClick = { onHotelClick(hotel) }
@@ -205,13 +208,13 @@ fun HotelsListView(
 
 @Composable
 fun HotelCard(
+    navController: NavController,
     hotel: Hotel,
     viewModel: HotelManagementViewModel,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val roomStats = viewModel.getCurrentRoomStats(hotel._id)
-
     val availableRooms = roomStats?.available ?: hotel.availableRooms
     val totalRooms = roomStats?.total ?: hotel.roomCount
 
@@ -239,6 +242,7 @@ fun HotelCard(
             )
             // Mostrar estadísticas adicionales si están disponibles
             roomStats?.let { stats ->
+
                 if (stats.maintenance > 0 || stats.cleaning > 0) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -254,6 +258,16 @@ fun HotelCard(
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedButton(
+                onClick = {
+                    // Asegúrate de tener la ruta "booking_management/{hotelId}" definida en tu grafo de navegación
+                    navController.navigate("booking_management/${hotel._id}")
+                },
+                modifier = Modifier.align(Alignment.End) // Alinea el botón a la derecha
+            ) {
+                Text("Ver Reservas")
+        }
         }
     }
 }

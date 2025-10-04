@@ -1,16 +1,7 @@
 package com.example.hoteru.view
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -18,10 +9,10 @@ import androidx.compose.material.icons.filled.Bed
 import androidx.compose.material.icons.filled.Hotel
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,22 +20,28 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.hoteru.model.DashboardStats
 import com.example.hoteru.model.User
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import com.example.hoteru.viewModel.DashboardViewModel
 
 @Composable
 fun AdminDashboardScreen(
     navController: NavController,
     user: User?
 ) {
+    // 3. INYECTAR EL VIEWMODEL Y OBTENER LOS ESTADOS
+    val viewModel: DashboardViewModel = viewModel()
+    val stats by viewModel.stats.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Header
+        // Header (sin cambios)
         Text(
             text = "Panel Administrador",
             fontSize = 24.sp,
@@ -59,12 +56,20 @@ fun AdminDashboardScreen(
             modifier = Modifier.padding(bottom = 24.dp)
         )
 
-        // Estadísticas Rápidas
-        QuickStatsRow()
+        // 4. PASAR LOS DATOS DINÁMICOS AL COMPOSABLE DE ESTADÍSTICAS
+        if (isLoading) {
+            // Muestra un indicador de carga mientras se obtienen los datos
+            Box(modifier = Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            // Una vez cargados, muestra las tarjetas con los datos reales
+            QuickStatsRow(stats = stats)
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Módulos de Gestión
+        // Módulos de Gestión (sin cambios)
         Text(
             text = "Módulos de Gestión",
             fontSize = 18.sp,
@@ -91,30 +96,33 @@ fun AdminDashboardScreen(
 }
 
 @Composable
-fun QuickStatsRow() {
+fun QuickStatsRow(stats: DashboardStats) { // 5. EL COMPOSABLE AHORA RECIBE LOS DATOS
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         QuickStatCard(
             title = "Hoteles",
-            value = "3",
+            value = stats.totalHotels.toString(), // Usa el dato dinámico
             color = Color(0xFF4CAF50)
         )
 
         QuickStatCard(
             title = "Habitaciones",
-            value = "45",
+            value = stats.totalRooms.toString(), // Usa el dato dinámico
             color = Color(0xFF2196F3)
         )
 
         QuickStatCard(
             title = "Reservas Hoy",
-            value = "12",
+            value = stats.reservationsToday.toString(), // Usa el dato dinámico
             color = Color(0xFFFF9800)
         )
     }
 }
+
+// El resto de tus Composables (QuickStatCard, AdminModuleCard) y data classes (AdminModule)
+// no necesitan ningún cambio y se quedan exactamente igual.
 
 @Composable
 fun QuickStatCard(title: String, value: String, color: Color) {
@@ -214,3 +222,4 @@ val adminModules = listOf(
         icon = Icons.Default.Person
     )
 )
+

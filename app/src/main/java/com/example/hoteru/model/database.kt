@@ -8,10 +8,13 @@ import org.bson.Document
 import org.bson.types.ObjectId
 import com.mongodb.client.model.Filters
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
+import java.util.Calendar
 
 object MongoDBConnection {
 
@@ -46,6 +49,51 @@ object MongoDBConnection {
             emit(rooms)
         } catch (e: Exception) {
             Log.e(TAG, "Error obteniendo habitaciones: ${e.message}")
+            emit(emptyList())
+        }
+    }.flowOn(Dispatchers.IO)
+
+    fun getAllRoomDetails(): Flow<List<RoomDetails>> = flow {
+        try {
+            Log.d(TAG, "Obteniendo TODAS las habitaciones con detalles...")
+
+            // 1. Obtener todas las habitaciones
+            val allRooms = database.getCollection("Rooms")
+                .find()
+                .map { Room.fromDocument(it) }
+                .toList()
+
+            if (allRooms.isEmpty()) {
+                emit(emptyList())
+                return@flow
+            }
+
+            // 2. Obtener los IDs únicos de los hoteles de esas habitaciones
+            val hotelIds = allRooms.map { it.hotelId }.distinct()
+
+            // 3. Obtener los nombres de esos hoteles en una sola consulta
+            val hotelsMap = database.getCollection("Hoteles")
+                .find(Filters.`in`("_id", hotelIds))
+                .map { it.getObjectId("_id") to it.getString("name") }
+                .toList().toMap()
+
+            // 4. Combinar la información
+            val roomDetails = allRooms.mapNotNull { room ->
+                val hotelName = hotelsMap[room.hotelId]
+                if (hotelName != null) {
+                    RoomDetails(room = room, hotelName = hotelName)
+                } else {
+                    // Si una habitación tiene un hotelId que no existe, la ignoramos.
+                    Log.w(TAG, "No se encontró el hotel con ID: ${room.hotelId} para la habitación ${room._id}")
+                    null
+                }
+            }
+
+            Log.d(TAG, "Se encontraron ${roomDetails.size} detalles de habitaciones.")
+            emit(roomDetails)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error obteniendo detalles de habitaciones: ${e.message}")
             emit(emptyList())
         }
     }.flowOn(Dispatchers.IO)
@@ -391,4 +439,52 @@ object MongoDBConnection {
             emit(emptyList())
         }
     }.flowOn(Dispatchers.IO)
+    // --- FUNCIÓN PARA EL DASHBOARD ---
+    suspend fun getDashboardStats(): DashboardStats {
+        return try {
+            Log.d(TAG, "Calculando estadísticas del Dashboard...")
+            coroutineScope {
+                // Lanzamos las 3 consultas en paralelo para máxima eficiencia
+                val hotelsCountDeferred = async(Dispatchers.IO) {
+                    database.getCollection("Hoteles").countDocuments()
+                }
+
+                val roomsCountDeferred = async(Dispatchers.IO) {
+                    database.getCollection("Rooms").countDocuments()
+                }
+
+                val reservationsTodayDeferred = async(Dispatchers.IO) {
+                    // Configurar el rango de fechas para "hoy"
+                    val calendar = Calendar.getInstance()
+                    // Inicio del día
+                    calendar.set(Calendar.HOUR_OF_DAY, 0)
+                    calendar.set(Calendar.MINUTE, 0)
+                    calendar.set(Calendar.SECOND, 0)
+                    val startOfToday = calendar.time
+                    // Fin del día
+                    calendar.set(Calendar.HOUR_OF_DAY, 23)
+                    calendar.set(Calendar.MINUTE, 59)
+                    calendar.set(Calendar.SECOND, 59)
+                    val endOfToday = calendar.time
+
+                    // Contar reservas que están activas hoy
+                    val filter = Filters.and(
+                        Filters.lte("checkInDate", endOfToday), // Check-in es hoy o antes
+                        Filters.gte("checkOutDate", startOfToday) // Check-out es hoy o después
+                    )
+                    database.getCollection("Bookings").countDocuments(filter)
+                }
+
+                // Esperamos los resultados y creamos el objeto
+                DashboardStats(
+                    totalHotels = hotelsCountDeferred.await(),
+                    totalRooms = roomsCountDeferred.await(),
+                    reservationsToday = reservationsTodayDeferred.await()
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error calculando estadísticas del Dashboard: ${e.message}", e)
+            DashboardStats() // Devuelve objeto con ceros en caso de error
+        }
+    }
 }

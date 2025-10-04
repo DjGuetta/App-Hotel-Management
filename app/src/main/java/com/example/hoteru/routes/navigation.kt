@@ -3,13 +3,8 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import MapScreen
+//import MapScreen
 import androidx.compose.material3.Text
-import com.example.hoteru.view.DetailsHotelScreen
-import org.bson.types.ObjectId
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.example.hoteru.view.AdminDashboardScreen
 import com.example.hoteru.view.LoginScreen
 import com.example.hoteru.view.HotelManagementScreen
@@ -18,7 +13,6 @@ import com.example.hoteru.view.ReservationsScreen
 import com.example.hoteru.view.CustomersScreen
 import com.example.hoteru.viewModel.LoginViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.hoteru.model.User
 
 @Composable
 fun AppNavigation() {

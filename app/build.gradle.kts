@@ -1,5 +1,3 @@
-
-
 plugins {
     // Android application plugin for building APKs
     // Plugin de aplicación Android para construir APKs
@@ -101,6 +99,7 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.play.services.drive)
     // Compose Bill of Materials for consistent Compose library versions
     // BOM (Bill of Materials) de Compose para versiones consistentes de librerías
     val composeBom = platform("androidx.compose:compose-bom:2025.08.00")
@@ -129,13 +128,13 @@ dependencies {
     // Activity
     implementation("androidx.activity:activity-compose")
     // Core library desugaring to support newer Java APIs on older Android versions
-    // Descargar librerías core para soportar APIs Java nuevas en Android antiguos
+    // Desugar librerías core para soportar APIs Java nuevas en Android antiguos
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation("io.coil-kt:coil-compose:2.6.0")
-    // MongoDB
-    implementation("org.mongodb:bson")
-    implementation("androidx.navigation:navigation-compose")
+    implementation("com.google.accompanist:accompanist-permissions:0.37.0")
+
+    implementation("androidx.navigation:navigation-compose:2.8.0")
     // MongoDB synchronous Java driver for connecting to MongoDB server
     // Driver Java síncrono de MongoDB para conectar con servidor MongoDB
     implementation("org.mongodb:mongodb-driver-sync:4.11.1")
@@ -157,6 +156,9 @@ dependencies {
     // Jetpack Compose integration with Android activity lifecycle
     // Integración Jetpack Compose con ciclo de vida de actividades Android
     implementation(libs.androidx.activity.compose)
+    // Compose Bill of Materials for consistent Compose library versions
+    // BOM (Bill of Materials) de Compose para versiones consistentes de librerías
+    implementation(platform(libs.androidx.compose.bom))
     // Compose UI core components
     // Componentes básicos de UI para Compose
     implementation(libs.androidx.ui)

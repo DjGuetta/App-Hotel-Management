@@ -1,3 +1,4 @@
+/*
 // ✅ works fine
 
 import android.content.Context
@@ -84,8 +85,7 @@ fun SearchEngine() {
     val mapModel: MapViewModel = viewModel()
     val searchText by mapModel.searchText.collectAsState()
     val hotels by mapModel.filteredHotels.collectAsState()
-    val isSearching by mapModel.isSearching.collectAsState()
-     OutlinedTextField(
+    OutlinedTextField(
         value = searchText,
         onValueChange =  mapModel::onSearchTextChange, // updates the state
         label = { Text("Search a hotel") },
@@ -122,14 +122,14 @@ fun MapScreen(navController: NavController) {
     // Create a new instance of the MapViewModel, which holds and manages hotel data as state.
 // Note: Instantiating manually means no lifecycle management (not recommended for production).
     val mapModel: MapViewModel = viewModel()
-    val userModel: UserLocation = viewModel()
+    viewModel()
 
 // Collect the StateFlow 'hotels' from the ViewModel as a Compose State,
 // then delegate its current value to the variable 'hotels'.
 // This makes 'hotels' reactive in the UI, triggering recomposition when the data changes.
     val hotels by mapModel.hotels.collectAsState()
 
-    val cameraPositionState = rememberCameraPositionState {
+    rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(tachiraLatLng, 10f)
     }
 
@@ -211,7 +211,7 @@ fun MapScreen(navController: NavController) {
 
     }
 }
-
+*/
 
 
 

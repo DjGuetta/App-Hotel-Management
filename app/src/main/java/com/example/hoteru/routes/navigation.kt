@@ -3,7 +3,6 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.hoteru.view.MapScreen
 import com.example.hoteru.view.DetailsRoomScreen
 import com.example.hoteru.view.HotelsByRating
 import com.example.hoteru.view.RoomsByPrice
@@ -15,7 +14,13 @@ import com.example.hoteru.view.ReservationsScreen
 import com.example.hoteru.view.CustomersScreen
 import com.example.hoteru.viewModel.LoginViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.hoteru.view.GlobalReservationsScreen
+import androidx.navigation.navArgument
+import androidx.navigation.NavType
+import com.example.hoteru.view.BookingManagementScreen
 import com.example.hoteru.view.DetailsHotelScreen
+import MapScreen
+
 import com.example.hoteru.view.RegisterScreen
 
 @Composable
@@ -25,7 +30,7 @@ fun AppNavigation() {
 
     NavHost(
         navController = navController,
-        startDestination = "registerUser"
+        startDestination = "home"
     ) {
         composable("login") {
             LoginScreen(
@@ -45,6 +50,22 @@ fun AppNavigation() {
         composable("hotel_management") {
             HotelManagementScreen(navController = navController)
         }
+        // -- RUTA CON ARGUMENTOS --
+        composable(
+            route = "booking_management/{hotelId}", // Define la ruta con un placeholder
+            arguments = listOf(navArgument("hotelId") { type = NavType.StringType }) // Define el tipo del argumento
+        ) { backStackEntry ->
+            // Extrae el argumento de la ruta
+            val hotelId = backStackEntry.arguments?.getString("hotelId")
+
+            // Llama a la pantalla pasándole el ID
+            if (hotelId != null) {
+                BookingManagementScreen(navController = navController, hotelId = hotelId)
+            } else {
+                // Opcional: Maneja el caso de que el ID sea nulo (ej. volver atrás)
+                navController.popBackStack()
+            }
+        }
 
         composable("registerUser") {
             RegisterScreen(navController = navController)
@@ -53,9 +74,8 @@ fun AppNavigation() {
         composable("room_management") {
             RoomManagementScreen(navController = navController)
         }
-
-        composable("reservations") {
-            ReservationsScreen(navController = navController)
+        composable("global_reservations") {
+            GlobalReservationsScreen(navController = navController)
         }
 
         composable("customers") {

@@ -24,17 +24,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.app.viewmodel.MapViewModel
+import MapViewModel
+import org.bson.Document
+
 
 @Composable
-fun DetailsRoomScreen(navController: NavController, hotelId: String?){
+fun DetailsRoomScreen(navController: NavController, roomId: String?) {
     val viewHotel: MapViewModel = viewModel()
     val r by viewHotel.onehotel.collectAsState()
 
-    LaunchedEffect(hotelId){
-        viewHotel.loadDetailsDocument("Rooms", hotelId)
-
+    LaunchedEffect(roomId) {
+        viewHotel.loadDetailsDocument("Rooms", roomId)
     }
+
+    println("room view $r")
+
+    // Safe function to get integer from MongoDB document
+    fun Document?.getSafeInt(key: String): Int {
+        return when (val v = this?.get(key)) {
+            is Int -> v
+            is Long -> v.toInt()
+            is Double -> v.toInt()
+            else -> 0
+        }
+    }
+
     val images = r?.get("image")
     print(images)
 
@@ -45,20 +59,25 @@ fun DetailsRoomScreen(navController: NavController, hotelId: String?){
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Tipo: ${r?.getString("type") ?: "Desconocido"}",
+                text = "Tipo: ${r?.getString("roomType") ?: "Desconocido"}",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
             )
             Spacer(modifier = Modifier.height(4.dp))
+
             Text(
-                text = "Cantidad disponible: ${r?.getInteger("quantity") ?: 0}",
+                text = "Cantidad disponible: ${r.getSafeInt("capacity")}",
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                text = "Precio: ${r?.getInteger("price") ?: 0} $",
+                text = "Precio: ${r.getSafeInt("pricePerNight")} $",
+                style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF388E3C)) // green
+            )
+            Text(
+                text = "Estado: ${r?.getString("status") ?: "VACIO"}",
                 style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF388E3C)) // green
             )
 
-            val features = r?.getList("features", String::class.java) ?: emptyList()
+            val features = r?.getList("amenities", String::class.java) ?: emptyList()
             if (features.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
@@ -81,5 +100,4 @@ fun DetailsRoomScreen(navController: NavController, hotelId: String?){
             }
         }
     }
-
 }

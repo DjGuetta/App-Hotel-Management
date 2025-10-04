@@ -80,7 +80,7 @@ fun AdminDashboardScreen(
                         when (module.title) {
                             "Gestión de Hoteles" -> navController.navigate("hotel_management")
                             "Gestión de Habitaciones" -> navController.navigate("room_management")
-                            "Reservas" -> navController.navigate("reservations")
+                            "Reservas" -> navController.navigate("global_reservations")
                             "Clientes" -> navController.navigate("customers")
                         }
                     }

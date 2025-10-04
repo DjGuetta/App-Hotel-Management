@@ -9,7 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.navigation.NavController
-import com.example.app.viewmodel.MapViewModel
+import MapViewModel
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.util.Base64
@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.clip
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxSize
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -68,64 +69,79 @@ fun Base64Image(
     }
 }
 
-@Composable
-fun DetailsHotelScreen(navController: NavController, hotelId: String?){
-    val viewHotel: MapViewModel = viewModel()
-    val hotel by viewHotel.onehotel.collectAsState()
-    val rooms by viewHotel.rooms.collectAsState()
-
-    LaunchedEffect(hotelId){
-        viewHotel.loadDetailsDocument("Hoteles", hotelId)
+//@Composable
+//fun DetailsHotelScreen(navController: NavController, hotelId: String?){
+//    val viewHotel: MapViewModel = viewModel()
+//    val hotel by viewHotel.onehotel.collectAsState()
+//    val rooms by viewHotel.rooms.collectAsState()
+//
+//    LaunchedEffect(hotelId){
+//        viewHotel.loadDetailsDocument("Hoteles", hotelId)
 //        viewHotel.loadRooms(hotelId)
-
-    }
-    val images = hotel?.get("images") as? List<String> ?: emptyList()
-    print(images)
-
-    Column(modifier = Modifier.padding(16.dp)) {
-        // Hotel data
-        Text(
-            text = hotel?.getString("name") ?: "not found..",
-            style = MaterialTheme.typography.titleLarge
-        )
-        Text(
-            text = hotel?.getString("description") ?: "",
-            style = MaterialTheme.typography.bodyMedium
-        )
-        Text(
-            text = hotel?.getString("contactEmail") ?: "",
-            style = MaterialTheme.typography.bodyMedium
-        )
-        Text(
-            text = hotel?.getString("contactPhone") ?: "",
-            style = MaterialTheme.typography.bodyMedium
-        )
-
-        // Hotel images
-        LazyColumn {
-            items(images) { img ->
-                Base64Image(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .padding(vertical = 4.dp),
-                    base64 = img
-                )
-            }
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "Habitaciones",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
+//
+//    }
+//    println("cuartos vista $rooms")
+//    println("cuartos vista $rooms")
+//    println("cuartos vista $rooms")
+//    println("cuartos vista $rooms")
+//    println("cuartos vista $rooms")
+//    println("cuartos vista $rooms")
+//    println("cuartos vista $rooms")
+//    println("cuartos vista $rooms")
+//    println("cuartos vista $rooms")
+//    println("cuartos vista $rooms")
+//    println("cuartos vista $rooms")
+//    println("cuartos vista $rooms")
+//
+//
+//
+//    val images = hotel?.get("images") as? List<String> ?: emptyList()
+//    print(images)
+//
+//    Column(modifier = Modifier.padding(16.dp)) {
+//        // Hotel data
+//        Text(
+//            text = hotel?.getString("name") ?: "not found..",
+//            style = MaterialTheme.typography.titleLarge
+//        )
+//        Text(
+//            text = hotel?.getString("description") ?: "",
+//            style = MaterialTheme.typography.bodyMedium
+//        )
+//        Text(
+//            text = hotel?.getString("contactEmail") ?: "",
+//            style = MaterialTheme.typography.bodyMedium
+//        )
+//        Text(
+//            text = hotel?.getString("contactPhone") ?: "",
+//            style = MaterialTheme.typography.bodyMedium
+//        )
+//
+//        // Hotel images
+//        LazyColumn {
+//            items(images) { img ->
+//                Base64Image(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .height(180.dp)
+//                        .clip(RoundedCornerShape(12.dp))
+//                        .padding(vertical = 4.dp),
+//                    base64 = img
+//                )
+//            }
+//        }
+//        Column(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(16.dp)
+//        ) {
+//            Text(
+//                text = "Habitaciones",
+//                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+//                color = MaterialTheme.colorScheme.primary,
+//                modifier = Modifier.padding(bottom = 12.dp)
+//            )
+//
 //            LazyColumn(
 //                verticalArrangement = Arrangement.spacedBy(12.dp)
 //            ) {
@@ -144,22 +160,26 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?){
 //                        }
 //                    ) {
 //                        Column(modifier = Modifier.padding(16.dp)) {
+////                            Text(
+////                                text = "Hotel: ${hotel?.getString("name ") ?: "Desconocido"}",
+////                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+////                            )
 //                            Text(
-//                                text = "Tipo: ${r.getString("type") ?: "Desconocido"}",
+//                                text = "Tipo: ${r.getString("roomType") ?: "Desconocido"}",
 //                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
 //                            )
 //                            Spacer(modifier = Modifier.height(4.dp))
 //                            Text(
-//                                text = "Cantidad disponible: ${r.getInteger("quantity") ?: 0}",
+//                                text = "Cantidad disponible: ${r.getInteger("capacity") ?: 0}",
 //                                style = MaterialTheme.typography.bodyMedium
 //                            )
 //                            Text(
-//                                text = "Precio: ${r.getInteger("price") ?: 0} $",
-//                                style = MaterialTheme.typography.bodyMedium.copy(
-//                                    color = Color(
-//                                        0xFF388E3C
-//                                    )
-//                                ) // green
+//                                text = "Precio: ${r.getInteger("pricePerNight") ?: 0} $",
+//                                style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF388E3C)) // green
+//                            )
+//                            Text(
+//                                text = "Precio: ${r.getInteger("status") ?: 0} $",
+//                                style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF388E3C)) // green
 //                            )
 //
 //                            Spacer(modifier = Modifier.height(8.dp))
@@ -177,10 +197,142 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?){
 //                    }
 //                }
 //            }
+//        }
+//
+//    }
+//}
+//
+//
+@Composable
+fun DetailsHotelScreen(navController: NavController, hotelId: String?) {
+    val viewHotel: MapViewModel = viewModel()
+    val hotel by viewHotel.onehotel.collectAsState()
+    val rooms by viewHotel.rooms.collectAsState()
+
+    LaunchedEffect(hotelId) {
+        viewHotel.loadDetailsDocument("Hoteles", hotelId)
+        viewHotel.loadRooms(hotelId)
+    }
+
+    val images = hotel?.get("images") as? List<String> ?: emptyList()
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Hotel info
+        item {
+            Text(
+                text = hotel?.getString("name") ?: "not found..",
+                style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+                text = hotel?.getString("description") ?: "",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                text = hotel?.getString("contactEmail") ?: "",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                text = hotel?.getString("contactPhone") ?: "",
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
 
-    }}
+        // Hotel images
+        items(images) { img ->
+            Base64Image(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .padding(vertical = 4.dp),
+                base64 = img
+            )
+        }
 
+        // Rooms header
+        item {
+            Text(
+                text = "Habitaciones",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(vertical = 12.dp)
+            )
+        }
+
+        // Rooms list
+        items(rooms ?: emptyList()) { r ->
+            val id = when(val value = r["_id"]) {
+                is ObjectId -> value.toHexString()
+                is String -> value
+                else -> "unknown"
+            }
+
+            val capacity = when(val c = r["capacity"]) {
+                is Int -> c
+                is Long -> c.toInt()
+                else -> 0
+            }
+
+            val price = when(val p = r["pricePerNight"]) {
+                is Int -> p
+                is Long -> p.toInt()
+                is Double -> p.toInt()
+                else -> 0
+            }
+
+            val status = r["status"]?.toString() ?: "VACIO"
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                onClick = { navController.navigate("detailsroom/$id") }
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Hotel: ${hotel?.getString("name") ?: "Desconocido"}",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Text(
+                        text = "Tipo: ${r["roomType"]?.toString() ?: "Desconocido"}",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Cantidad disponible: $capacity",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = "Precio: $price $",
+                        style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF388E3C))
+                    )
+                    Text(
+                        text = "Estado: $status",
+                        style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF388E3C))
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    r["image"]?.toString()?.takeIf { it.isNotBlank() }?.let { img ->
+                        Base64Image(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(160.dp)
+                                .clip(RoundedCornerShape(10.dp)),
+                            base64 = img
+                        )
+                    }
+                }
+            }
+        }
+
+    }
+}
 
 
 

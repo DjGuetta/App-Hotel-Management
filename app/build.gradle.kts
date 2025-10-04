@@ -103,10 +103,16 @@ dependencies {
 //    implementation(libs.androidx.compose.material3)
     // Compose Bill of Materials for consistent Compose library versions
     // BOM (Bill of Materials) de Compose para versiones consistentes de librerías
-    val composeBom = platform("androidx.compose:compose-bom:2025.08.00")
+
+    val composeBom = platform("androidx.compose:compose-bom:2023.10.01")
     implementation(composeBom)
     testImplementation(composeBom)
     androidTestImplementation(composeBom)
+
+    // Lifecycle + Compose (compatible versions for AGP 8.1.1)
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+    implementation("androidx.compose.runtime:runtime-livedata:1.5.4")
     implementation(libs.androidx.foundation.layout.android)
     implementation(libs.androidx.foundation.layout.android)
     implementation(libs.androidx.foundation.layout.android)
@@ -147,6 +153,16 @@ dependencies {
     // Google Play Services Maps SDK for Android core maps functionality
     // SDK Google Play Services Maps para funcionalidad básica de mapas en Android
     implementation("com.google.android.gms:play-services-maps:18.1.0")
+
+    // Navigation for Compose
+    implementation("androidx.navigation:navigation-compose:2.8.2")
+
+    // Lifecycle (Flows + LiveData in Compose)
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.6")
+    implementation("androidx.compose.runtime:runtime-livedata:1.7.4")
+
+    // Coroutines for Android (needed for Dispatchers.Main)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
     // AndroidX Core KTX for Kotlin extensions and utilities
     // AndroidX Core KTX para extensiones y utilidades en Kotlin

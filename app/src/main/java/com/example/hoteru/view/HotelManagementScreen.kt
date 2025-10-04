@@ -5,33 +5,28 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
-import androidx.compose.ui.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.*
+import androidx.navigation.NavController
 import com.example.hoteru.model.Hotel
 import com.example.hoteru.model.HotelUiState
-import com.example.hoteru.view.HotelEditDialog
+import com.example.hoteru.model.RoomStats
 import com.example.hoteru.viewModel.HotelManagementViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,11 +37,10 @@ fun HotelManagementScreen(navController: NavController) {
     val selectedHotel by viewModel.selectedHotel.observeAsState()
     val isEditing by viewModel.isEditing.observeAsState(false)
     val toastMessage by viewModel.toastMessage.observeAsState()
-    LocalContext.current
 
     LaunchedEffect(Unit) {
         try {
-            viewModel.loadHotels()
+            viewModel.loadHotelsWithStats()
         } catch (e: Exception) {
             Log.e("HotelScreen", "CRASH en loadHotels: ${e.message}", e)
         }
@@ -74,7 +68,7 @@ fun HotelManagementScreen(navController: NavController) {
                 actions = {
                     IconButton(onClick = {
                         Log.d("Pantalla de gestión de hoteles", "Recargando manualmente...")
-                        viewModel.loadHotels()
+                        viewModel.loadHotelsWithStats()
                     }) {
                         Icon(
                             painter = painterResource(id = android.R.drawable.ic_menu_rotate),
@@ -125,6 +119,7 @@ fun HotelManagementScreen(navController: NavController) {
                     } else {
                         HotelsListView(
                             hotels = state.hotels,
+                            viewModel = viewModel,
                             onHotelClick = {
                                 Log.d("Pantalla de gestión de hoteles", "Hotel seleccionado: ${it.name}")
                                 viewModel.selectHotel(it)
@@ -137,7 +132,7 @@ fun HotelManagementScreen(navController: NavController) {
                         message = state.message,
                         onRetry = {
                             Log.d("Pantalla de gestión de hoteles", "Reintentando cargar hoteles...")
-                            viewModel.loadHotels()
+                            viewModel.loadHotelsWithStats()
                         },
                     )
                 }
@@ -179,13 +174,13 @@ fun HotelManagementScreen(navController: NavController) {
 @Composable
 fun HotelsListView(
     hotels: List<Hotel>,
+    viewModel: HotelManagementViewModel,
     onHotelClick: (Hotel) -> Unit,
     modifier: Modifier = Modifier
 ) {
-
     LazyColumn(
-        modifier = modifier.padding(horizontal = 16.dp), // Padding horizontal para los lados
-        contentPadding = PaddingValues(vertical = 16.dp), // Padding para el contenido interno (arriba y abajo)
+        modifier = modifier.padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
@@ -194,22 +189,32 @@ fun HotelsListView(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color.Gray,
-                modifier = Modifier.padding(bottom = 8.dp) // Añadimos un poco de espacio debajo del título
+                modifier = Modifier.padding(bottom = 8.dp)
             )
         }
 
         items(hotels, key = { hotel -> hotel._id }) { hotel ->
             HotelCard(
                 hotel = hotel,
+                viewModel = viewModel,
                 onClick = { onHotelClick(hotel) }
             )
         }
-
-        }
+    }
 }
 
 @Composable
-fun HotelCard(hotel: Hotel, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun HotelCard(
+    hotel: Hotel,
+    viewModel: HotelManagementViewModel,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val roomStats = viewModel.getCurrentRoomStats(hotel._id)
+
+    val availableRooms = roomStats?.available ?: hotel.availableRooms
+    val totalRooms = roomStats?.total ?: hotel.roomCount
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -228,10 +233,27 @@ fun HotelCard(hotel: Hotel, onClick: () -> Unit, modifier: Modifier = Modifier) 
                 color = Color.Gray
             )
             Text(
-                text = "${hotel.availableRooms}/${hotel.roomCount} habitaciones disponibles",
+                text = "$availableRooms/$totalRooms habitaciones disponibles",
                 fontSize = 12.sp,
-                color = if (hotel.availableRooms > 0) Color(0xFF4CAF50) else Color(0xFFF44336)
+                color = if (availableRooms > 0) Color(0xFF4CAF50) else Color(0xFFF44336)
             )
+            // Mostrar estadísticas adicionales si están disponibles
+            roomStats?.let { stats ->
+                if (stats.maintenance > 0 || stats.cleaning > 0) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = buildString {
+                            if (stats.maintenance > 0) append("${stats.maintenance} en mantenimiento")
+                            if (stats.cleaning > 0) {
+                                if (stats.maintenance > 0) append(", ")
+                                append("${stats.cleaning} en limpieza")
+                            }
+                        },
+                        fontSize = 10.sp,
+                        color = Color(0xFFFF9800)
+                    )
+                }
+            }
         }
     }
 }
@@ -288,4 +310,3 @@ fun ErrorView(message: String, onRetry: () -> Unit, modifier: Modifier = Modifie
         }
     }
 }
-

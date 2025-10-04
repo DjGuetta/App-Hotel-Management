@@ -1,4 +1,4 @@
-package com.example.app.viewmodel
+/*package com.example.app.viewmodel
 
 // ------------------- IMPORTS -------------------
 // Import for using a ViewModel, which stores and manages UI-related data
@@ -196,3 +196,4 @@ class MapViewModel : ViewModel() {
 
 }
 
+*/

@@ -5,12 +5,11 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.hoteru.model.Hotel
-import com.example.hoteru.model.HotelUiState
-import com.example.hoteru.model.Location
-import com.example.hoteru.model.MongoDBConnection
+import com.example.hoteru.model.*
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import org.bson.Document
+import org.bson.types.ObjectId
 
 class HotelManagementViewModel : ViewModel() {
 
@@ -26,21 +25,55 @@ class HotelManagementViewModel : ViewModel() {
     private val _toastMessage = MutableLiveData<String?>()
     val toastMessage: LiveData<String?> = _toastMessage
 
+    private val _hotelsWithStats = MutableLiveData<List<Pair<Hotel, RoomStats>>>()
+    val hotelsWithStats: LiveData<List<Pair<Hotel, RoomStats>>> = _hotelsWithStats
+
     private val TAG = "HotelManagementViewModel"
 
     init {
-        loadHotels()
+        loadHotelsWithStats()
     }
 
-    fun loadHotels() {
+    // Cargar hoteles con estadísticas en tiempo real
+    fun loadHotelsWithStats() {
         viewModelScope.launch {
             _hotelUiState.value = HotelUiState.Loading
             try {
-                val hotels = getAllHotelsFromMongoDB()
+                // Recolectar continuamente el Flow
+                MongoDBConnection.getHotelsWithRoomStats().collect { hotelsWithStats ->
+                    _hotelsWithStats.value = hotelsWithStats
+
+                    if (hotelsWithStats.isEmpty()) {
+                        _hotelUiState.value = HotelUiState.Empty
+                    } else {
+                        val hotels = hotelsWithStats.map { it.first }
+                        _hotelUiState.value = HotelUiState.Success(hotels)
+                        Log.d(TAG, "Hoteles cargados: ${hotels.size}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error con stream reactivo: ${e.message}")
+                _hotelUiState.value = HotelUiState.Error("Error cargando hoteles: ${e.message}")
+                // Fallback: cargar solo hoteles sin estadísticas
+                loadHotelsFallback()
+            }
+        }
+    }
+
+    // Fallback en caso de error con el stream reactivo
+    private fun loadHotelsFallback() {
+        viewModelScope.launch {
+            try {
+                _hotelUiState.value = HotelUiState.Loading
+                // Método simple sin Flows
+                val hotels = getHotelsSync()
+
                 if (hotels.isEmpty()) {
                     _hotelUiState.value = HotelUiState.Empty
                 } else {
                     _hotelUiState.value = HotelUiState.Success(hotels)
+                    // Cargar estadísticas por separado
+                    loadRoomsForStats(hotels)
                 }
             } catch (e: Exception) {
                 _hotelUiState.value = HotelUiState.Error("Error cargando hoteles: ${e.message}")
@@ -48,10 +81,65 @@ class HotelManagementViewModel : ViewModel() {
         }
     }
 
+    // Método síncrono para obtener hoteles
+    private suspend fun getHotelsSync(): List<Hotel> {
+        return try {
+            var hotelsList = emptyList<Hotel>()
+            MongoDBConnection.getHotels().collect { hotels ->
+                hotelsList = hotels
+            }
+            hotelsList
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    // Cargar habitaciones para calcular estadísticas (modo fallback)
+    private suspend fun loadRoomsForStats(hotels: List<Hotel>) {
+        try {
+            var allRooms = emptyList<Room>()
+            MongoDBConnection.getAllRooms().collect { rooms ->
+                allRooms = rooms
+            }
+
+            val hotelsWithStats = hotels.map { hotel ->
+                val hotelRooms = allRooms.filter { it.hotelId == hotel._id }
+                val stats = hotel.getRoomStats(hotelRooms)
+                hotel to stats
+            }
+            _hotelsWithStats.value = hotelsWithStats
+        } catch (e: Exception) {
+            Log.e(TAG, "Error cargando habitaciones para estadísticas: ${e.message}")
+        }
+    }
+
+    // Función para obtener estadísticas actualizadas de un hotel
+    fun getCurrentRoomStats(hotelId: ObjectId): RoomStats? {
+        return _hotelsWithStats.value
+            ?.find { it.first._id == hotelId }
+            ?.second
+    }
+
+    // Función para actualizar el contador de habitaciones cuando cambia el estado
+    fun updateHotelRoomCount(hotelId: ObjectId) {
+        viewModelScope.launch {
+            try {
+                // Forzar recarga de estadísticas
+                loadHotelsWithStats()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error actualizando contador de habitaciones: ${e.message}")
+            }
+        }
+    }
+
+    // Función para obtener hoteles de manera tradicional (sin estadísticas)
     private suspend fun getAllHotelsFromMongoDB(): List<Hotel> {
         return try {
-            val documents = MongoDBConnection.getAllHotels()
-            documents.map { documentToHotel(it) }
+            var hotelsList = emptyList<Hotel>()
+            MongoDBConnection.getHotels().collect { hotels ->
+                hotelsList = hotels
+            }
+            hotelsList
         } catch (e: Exception) {
             emptyList()
         }
@@ -81,7 +169,7 @@ class HotelManagementViewModel : ViewModel() {
             Hotel(
                 name = "Error cargando hotel",
                 description = "No se pudieron cargar los datos del hotel"
-            ) // Retorna Hotel por defecto en caso de error
+            )
         }
     }
 
@@ -90,11 +178,9 @@ class HotelManagementViewModel : ViewModel() {
             val locationDoc = document.get("location") as? Document
 
             if (locationDoc != null) {
-                // 1. Lee la lista como una lista de Number, que es más genérico.
                 val rawCoordinates = locationDoc.getList("coordinates", Number::class.java)
 
                 if (rawCoordinates != null && rawCoordinates.size >= 2) {
-                    // 2. Convierte cada Number a Double.
                     val coordinates = rawCoordinates.map { it.toDouble() }
 
                     Location(
@@ -103,24 +189,22 @@ class HotelManagementViewModel : ViewModel() {
                     )
                 } else {
                     Log.w(TAG, "Coordenadas no encontradas o incompletas en el documento.")
-                    Location() // Coordenadas por defecto si la lista es nula o corta
+                    Location()
                 }
             } else {
                 Log.w(TAG, "Campo 'location' no encontrado en el documento.")
-                Location() // Location por defecto si el campo 'location' no existe
+                Location()
             }
         } catch (e: Exception) {
             Log.e(TAG, "💥 Error crítico analizando location: ${e.message}", e)
-            Location() // Location por defecto en caso de cualquier error
+            Location()
         }
     }
 
     private fun hotelToDocument(hotel: Hotel): Document {
-        val finalAvailableRooms = if (hotel.availableRooms == 0 && hotel.roomCount > 0) {
-            hotel.roomCount
-        } else {
-            hotel.availableRooms
-        }
+        // Obtener estadísticas actuales si están disponibles
+        val currentStats = getCurrentRoomStats(hotel._id)
+        val finalAvailableRooms = currentStats?.available ?: hotel.availableRooms
 
         return Document().apply {
             put("name", hotel.name)
@@ -138,7 +222,7 @@ class HotelManagementViewModel : ViewModel() {
             put("images", hotel.images)
             put("isActive", hotel.isActive)
             put("roomCount", hotel.roomCount)
-            put("availableRooms", finalAvailableRooms) // ✅ Usar el valor calculado
+            put("availableRooms", finalAvailableRooms)
             put("adminId", hotel.adminId)
             put("createdAt", hotel.createdAt)
         }
@@ -172,20 +256,14 @@ class HotelManagementViewModel : ViewModel() {
                 val document = hotelToDocument(hotel)
                 var success: Boolean
 
-                // Usamos el estado original guardado en `_selectedHotel`.
                 val originalHotel = _selectedHotel.value
-
-                // Si el hotel original existe y su nombre no estaba en blanco, es una actualización.
                 val isUpdate = originalHotel != null && originalHotel.name.isNotBlank()
 
                 if (isUpdate) {
-                    //ACTUALIZAR HOTEL EXISTENTE
                     Log.d(TAG, "🔄 Actualizando hotel con ID: ${hotel._id}")
                     success = MongoDBConnection.updateHotel(hotel._id, document)
                 } else {
-                    //INSERTAR HOTEL NUEVO
                     Log.d(TAG, "✨ Creando nuevo hotel: ${hotel.name}")
-                    // Al insertar, MongoDB le asignará un nuevo _id.
                     success = MongoDBConnection.insertHotel(document)
                 }
 
@@ -194,12 +272,10 @@ class HotelManagementViewModel : ViewModel() {
                     Log.d(TAG, message)
                     _toastMessage.value = message
 
-                    // Cierra el diálogo y refresca la lista
-                    cancelEdit() // Esto limpia _selectedHotel y _isEditing
-                    loadHotels() // Vuelve a cargar toda la lista desde la BD
+                    cancelEdit()
+                    loadHotelsWithStats() // Usar la función reactiva
                 } else {
-                    val message =
-                        if (isUpdate) "❌ Error al actualizar" else "❌ Error al crear"
+                    val message = if (isUpdate) "❌ Error al actualizar" else "❌ Error al crear"
                     Log.e(TAG, message)
                     _toastMessage.value = message
                 }
@@ -218,7 +294,7 @@ class HotelManagementViewModel : ViewModel() {
                 if (success) {
                     _toastMessage.value = "✅ Hotel eliminado"
                     _selectedHotel.value = null
-                    loadHotels()
+                    loadHotelsWithStats()
                 } else {
                     _toastMessage.value = "❌ Error eliminando el hotel"
                 }

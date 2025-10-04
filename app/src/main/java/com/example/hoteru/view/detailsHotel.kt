@@ -1,4 +1,4 @@
-@file:Suppress("CAST_NEVER_SUCCEEDS")
+/*@file:Suppress("CAST_NEVER_SUCCEEDS")
 
 package com.example.hoteru.view
 
@@ -106,3 +106,4 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?){
 
 }
 
+*/

@@ -153,7 +153,7 @@ class MapViewModel : ViewModel() {
 
             // English: Get the MongoDB collection named "Hotel".
             // Español: Obtiene la colección de MongoDB llamada "Hotel".
-            val collection = MongoDBConnection.getCollection("Hotels")
+            val collection = MongoDBConnection.getCollection("Hoteles")
 
             // English: Fetch all documents and convert them to a list.
             // Español: Obtiene todos los documentos y los convierte en una lista.
@@ -258,7 +258,7 @@ class MapViewModel : ViewModel() {
     }
     fun listOfHotelsSearchEngine(){
         viewModelScope.launch(Dispatchers.IO) {
-            val collection = MongoDBConnection.getCollection("Hotels")
+            val collection = MongoDBConnection.getCollection("Hoteles")
 
             // English: Fetch all documents and convert them to a list.
             // Español: Obtiene todos los documentos y los convierte en una lista.

@@ -32,7 +32,7 @@ import org.bson.types.ObjectId
 fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String?){
     val mapModel: MapViewModel = viewModel()
 
-    val idhotel by mapModel.idHotel.collectAsState()
+//    val idhotel by mapModel.idHotel.collectAsState()
     val hotel by mapModel.onehotel.collectAsState()
     val rooms by mapModel.listOfRoomsUnderTheirPrice.collectAsState()
 
@@ -41,10 +41,10 @@ fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String
         val maxValue = maximum?.toDoubleOrNull() ?: Double.MAX_VALUE
         mapModel.listOfRoomsUnderTheirPrice(minValue, maxValue)
     }
-
-    LaunchedEffect(idhotel) {
-        mapModel.loadDetailsDocument("Hotels", idhotel)
-    }
+//
+//    LaunchedEffect(idhotel) {
+//        mapModel.loadDetailsDocument("Hotels", idhotel)
+//    }
 
     Column(
         modifier = Modifier
@@ -72,7 +72,7 @@ fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String
                     is String -> value                    // if it's String
                     else -> null                          // fallback if _id is missing
                 }
-                    mapModel.idHotel(idhotel)
+//                    mapModel.idHotel(idhotel)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),

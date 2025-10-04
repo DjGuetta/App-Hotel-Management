@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.hoteru.app-mergeDebugResources-58:/values-v21/values-v21.xml",
+            "outputFile": "com.example.hoteru.app-mergeDebugResources-48:/values-v21/values-v21.xml",
             "map": [
                 {
                     "source": "C:\\Users\\yefer\\.gradle\\caches\\8.13\\transforms\\16df0632e45ac4b16acd89d050af6ab2\\transformed\\core-1.16.0\\res\\values-v21\\values-v21.xml",

@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 //import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -58,12 +60,15 @@ import com.google.maps.android.compose.rememberMarkerState
 import org.bson.Document
 import org.bson.types.ObjectId
 import androidx.compose.material3.*
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.navigation.Navigation
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -107,14 +112,12 @@ fun SearchEngine(cameraPositionState: CameraPositionState) {
                     modifier = Modifier
                         .clickable{
                             val location = hotel.get("location", Document::class.java)
-                            println(hotel.getString("name"))
-                            println(location)
+                            val coordinatesAny = location?.get("coordinates") as? List<*>
 
-                            // Safe calls with Elvis operator
-                            val lat = location?.getDouble("latitude") ?: return@clickable
-                            val lon = location?.getDouble("longitude") ?: return@clickable
-//
-//                        mapModel.setCameraTarget(LatLng(lat, lon))
+                            val lat = coordinatesAny?.getOrNull(1)?.toString()?.toDoubleOrNull() ?: 0.0
+                            val lon = coordinatesAny?.getOrNull(0)?.toString()?.toDoubleOrNull() ?: 0.0
+
+
                             mapModel.moveCamerato( cameraPositionState,LatLng(lat, lon))
                         }
 
@@ -162,9 +165,10 @@ fun DropdownListHotel(navController: NavController, DropDownItems: List<Document
                     text = {Text( hotel.getString("name"))},
                     onClick = {
                         if (locationPermissionState.status.isGranted){
-                            val location = hotel.get("location", Object::class.java) as? Document
-                            val lat = location?.getDouble("latitude")
-                            val lon = location?.getDouble("longitude")
+                            val location = hotel.get("location", Document::class.java)
+                            val coordinatesAny = location?.get("coordinates") as? List<*>
+                            val lat = coordinatesAny?.getOrNull(1)?.toString()?.toDoubleOrNull() ?: 0.0
+                            val lon = coordinatesAny?.getOrNull(0)?.toString()?.toDoubleOrNull() ?: 0.0
                             if (lat != null && lon != null) {
                                 // ✅ Instead of calling DrawWay directly, update state
 //                            selectedLocation = LatLng(lat, lon)
@@ -188,7 +192,9 @@ fun DropdownListHotel(navController: NavController, DropDownItems: List<Document
 }
 @Composable
 fun DropDownListMenu(
-    mapModel: MapViewModel
+    mapModel: MapViewModel,
+    scope: CoroutineScope,
+    drawerState: DrawerState
 ){
     ModalDrawerSheet {
         Text("Menu", modifier = Modifier.padding(16.dp))
@@ -221,6 +227,19 @@ fun DropDownListMenu(
                 mapModel.visibilityRatingFilter (true)
             }
         )
+        Button(
+            onClick = {
+                scope.launch {
+                    if (drawerState.isClosed) {
+                        drawerState.open()  // 👉 open drawer
+                    } else {
+                        drawerState.close() // 👉 close drawer
+                    }
+                }
+            }
+        ) {
+            Text("X")
+        }
 
     }
 
@@ -322,16 +341,14 @@ fun MapScreen(navController: NavController) {
     val visibilitySearchEngine by mapModel.visibilitySearchEngine.collectAsState()
     val visibilityPriceFilter by mapModel.visibilityPriceFilter.collectAsState()
     val visibilityRatingFilter by mapModel.visibilityRatingFilter.collectAsState()
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
 
     LaunchedEffect(Unit) {
         userModel.updateLocation()
     }
 
-
-// Collect the StateFlow 'hotels' from the ViewModel as a Compose State,
-// then delegate its current value to the variable 'hotels'.
-// This makes 'hotels' reactive in the UI, triggering recomposition when the data changes.
     val hotels by mapModel.hotels.collectAsState()
 
     val cameraPositionState = rememberCameraPositionState {
@@ -346,9 +363,10 @@ fun MapScreen(navController: NavController) {
         )
     }
     ModalNavigationDrawer(
-        drawerState = rememberDrawerState(DrawerValue.Closed),
+        drawerState = drawerState,
+        gesturesEnabled = false, // 🚫 disables swipe gesture
         drawerContent = {
-            DropDownListMenu(mapModel = mapModel)
+            DropDownListMenu(mapModel = mapModel, scope, drawerState)
         }
     ) {
 
@@ -367,38 +385,35 @@ fun MapScreen(navController: NavController) {
 
             ) {
                 hotels.forEach { hotel ->
-                    val location = hotel.get("location", Object::class.java) as? Document
+                    val location = hotel.get("location", Document::class.java)
+                    val coordinatesAny = location?.get("coordinates") as? List<*>
                     val id = when (val value = hotel["_id"]) {
                         is ObjectId -> value.toHexString()   // if it's ObjectId
                         is String -> value                    // if it's String
                         else -> null                          // fallback if _id is missing
                     }
-                    println(id)
-                    println("MapScreen")
-                    if (location != null) {
-                        val lat = location.getDouble("latitude")
-                        val lon = location.getDouble("longitude")
-                        val markerState = rememberMarkerState(position = LatLng(lat, lon))
+                    val lat = coordinatesAny?.getOrNull(1)?.toString()?.toDoubleOrNull() ?: 0.0
+                    val lon = coordinatesAny?.getOrNull(0)?.toString()?.toDoubleOrNull() ?: 0.0
+                    val markerState = rememberMarkerState(position = LatLng(lat, lon))
 
-                        MarkerInfoWindow(
-                            state = markerState,
-                            icon = bitmapDescriptorFromVector(LocalContext.current, R.drawable.h),
-                            onInfoWindowClick = {
-                                // Whole info window clicked
-                                navController.navigate("detailshotel/$id")
-                            }
-                        ) { marker ->
-                            Column(
-                                modifier = Modifier
-                                    .background(Color.White)
-                                    .padding(8.dp)
-                            ) {
-                                Text(text = hotel.getString("name") ?: "")
-                                Text(text = hotel.getString("description") ?: "")
-                            }
+                    MarkerInfoWindow(
+                        state = markerState,
+                        icon = bitmapDescriptorFromVector(LocalContext.current, R.drawable.h),
+                        onInfoWindowClick = {
+                            // Whole info window clicked
+                            navController.navigate("detailshotel/$id")
                         }
-
+                    ) { marker ->
+                        Column(
+                            modifier = Modifier
+                                .background(Color.White)
+                                .padding(8.dp)
+                        ) {
+                            Text(text = hotel.getString("name") ?: "")
+                            Text(text = hotel.getString("description") ?: "")
+                        }
                     }
+
 
                 }
                 userLocation?.let { current ->
@@ -408,7 +423,10 @@ fun MapScreen(navController: NavController) {
                         mapModel.visibilityButton(true)
                         Marker(
                             state = rememberMarkerState(position = current),
-                            icon = bitmapDescriptorFromVector(LocalContext.current, R.drawable.user),
+                            icon = bitmapDescriptorFromVector(
+                                LocalContext.current,
+                                R.drawable.user
+                            ),
                             title = "You are here",
                         )
 
@@ -423,68 +441,87 @@ fun MapScreen(navController: NavController) {
                 }
                 println("selected location:$selectedLocation")
                 print("selected user location:$userLocation")
-
-            }
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(16.dp)
-                    .background(Color.White)
-            ) {
-                if (visibilitySearchEngine == true) {
-                    SearchEngine(cameraPositionState)
-                }
-                if (visibilityPriceFilter == true) {
-                    PriceFilter(navController)
-                }
-                if (visibilityRatingFilter == true) {
-                    RatingFilter(navController)
-                }
-            }
-            Button(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(16.dp)
-                    .background(Color.White),
-                onClick = {
-                    mapModel.visibilityWindow(true)
-                }
-            ) {
-                Text(text = "->")
             }
 
-            if (visibilityWindow == true) {
+
                 Column(
                     modifier = Modifier
-                        .align(Alignment.Center)
+                        .align(Alignment.TopCenter)
+                        .padding(16.dp)
+                        .background(Color.White)
+                ) {
+                    if (visibilitySearchEngine == true) {
+                        SearchEngine(cameraPositionState)
+                    }
+                    if (visibilityPriceFilter == true) {
+                        PriceFilter(navController)
+                    }
+                    if (visibilityRatingFilter == true) {
+                        RatingFilter(navController)
+                    }
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                if (drawerState.isClosed) {
+                                    drawerState.open()  // 👉 open drawer
+                                } else {
+                                    drawerState.close() // 👉 close drawer
+                                }
+                            }
+                        }
+                    ) {
+                        Text("=")
+                    }
+                }
+
+                Button(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
                         .padding(16.dp)
                         .background(Color.White),
+                    onClick = {
+                        mapModel.visibilityWindow(true)
+                    }
                 ) {
-                    DropdownListHotel(navController, hotels, mapModel)
-                    Button(onClick = {
-                        mapModel.visibilityWindow(false)
-                    }) {
-                        Text("X")
+                    Text(text = "->")
+                }
+
+                if (visibilityWindow == true) {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(16.dp)
+                            .background(Color.White),
+                    ) {
+                        DropdownListHotel(navController, hotels, mapModel)
+                        Button(onClick = {
+                            mapModel.visibilityWindow(false)
+                        }) {
+                            Text("X")
+                        }
+
                     }
 
                 }
-
-            }
-            if (userLocation != null && selectedLocation != null) {
-                Button(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(16.dp),
-                    onClick = { mapModel.updateSelectedLocation(null) } // remove the way
-                ) {
-                    Text("Remove the way")
+                if (userLocation != null && selectedLocation != null) {
+                    Button(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp),
+                        onClick = { mapModel.updateSelectedLocation(null) } // remove the way
+                    ) {
+                        Text("Remove the way")
+                    }
                 }
             }
+
         }
-
     }
 
-    }
+
+
+
+
 
 
 

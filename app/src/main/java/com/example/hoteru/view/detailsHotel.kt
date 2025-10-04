@@ -75,8 +75,8 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?){
     val rooms by viewHotel.rooms.collectAsState()
 
     LaunchedEffect(hotelId){
-        viewHotel.loadDetailsDocument("Hotels", hotelId)
-        viewHotel.loadRooms(hotelId)
+        viewHotel.loadDetailsDocument("Hoteles", hotelId)
+//        viewHotel.loadRooms(hotelId)
 
     }
     val images = hotel?.get("images") as? List<String> ?: emptyList()
@@ -90,6 +90,14 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?){
         )
         Text(
             text = hotel?.getString("description") ?: "",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Text(
+            text = hotel?.getString("contactEmail") ?: "",
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Text(
+            text = hotel?.getString("contactPhone") ?: "",
             style = MaterialTheme.typography.bodyMedium
         )
 
@@ -118,57 +126,57 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?){
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(rooms) { r ->
-                    val id = when (val value = r["_id"]) {
-                        is ObjectId -> value.toHexString()   // if it's ObjectId
-                        is String -> value                    // if it's String
-                        else -> null                          // fallback if _id is missing
-                    }
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        onClick = {
-                            navController.navigate("detailsroom/$id")
-                        }
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "Tipo: ${r.getString("type") ?: "Desconocido"}",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Cantidad disponible: ${r.getInteger("quantity") ?: 0}",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = "Precio: ${r.getInteger("price") ?: 0} $",
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = Color(
-                                        0xFF388E3C
-                                    )
-                                ) // green
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            r.getString("image")?.takeIf { it.isNotBlank() }?.let { img ->
-                                Base64Image(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(160.dp)
-                                        .clip(RoundedCornerShape(10.dp)),
-                                    base64 = img
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+//            LazyColumn(
+//                verticalArrangement = Arrangement.spacedBy(12.dp)
+//            ) {
+//                items(rooms) { r ->
+//                    val id = when (val value = r["_id"]) {
+//                        is ObjectId -> value.toHexString()   // if it's ObjectId
+//                        is String -> value                    // if it's String
+//                        else -> null                          // fallback if _id is missing
+//                    }
+//                    Card(
+//                        modifier = Modifier.fillMaxWidth(),
+//                        shape = RoundedCornerShape(12.dp),
+//                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+//                        onClick = {
+//                            navController.navigate("detailsroom/$id")
+//                        }
+//                    ) {
+//                        Column(modifier = Modifier.padding(16.dp)) {
+//                            Text(
+//                                text = "Tipo: ${r.getString("type") ?: "Desconocido"}",
+//                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+//                            )
+//                            Spacer(modifier = Modifier.height(4.dp))
+//                            Text(
+//                                text = "Cantidad disponible: ${r.getInteger("quantity") ?: 0}",
+//                                style = MaterialTheme.typography.bodyMedium
+//                            )
+//                            Text(
+//                                text = "Precio: ${r.getInteger("price") ?: 0} $",
+//                                style = MaterialTheme.typography.bodyMedium.copy(
+//                                    color = Color(
+//                                        0xFF388E3C
+//                                    )
+//                                ) // green
+//                            )
+//
+//                            Spacer(modifier = Modifier.height(8.dp))
+//
+//                            r.getString("image")?.takeIf { it.isNotBlank() }?.let { img ->
+//                                Base64Image(
+//                                    modifier = Modifier
+//                                        .fillMaxWidth()
+//                                        .height(160.dp)
+//                                        .clip(RoundedCornerShape(10.dp)),
+//                                    base64 = img
+//                                )
+//                            }
+//                        }
+//                    }
+//                }
+//            }
         }
 
     }}

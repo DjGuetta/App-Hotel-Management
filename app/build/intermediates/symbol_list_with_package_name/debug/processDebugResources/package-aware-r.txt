@@ -150,6 +150,7 @@ drawable ic_call_decline
 drawable ic_call_decline_low
 drawable ic_launcher_background
 drawable ic_launcher_foreground
+drawable icono
 drawable notification_action_background
 drawable notification_bg
 drawable notification_bg_low
@@ -210,6 +211,7 @@ id auto
 id blocking
 id chronometer
 id coil_request_manager
+id compose_prefetch_scheduler
 id compose_view_saveable_id_tag
 id consume_window_insets_tag
 id dark
@@ -286,6 +288,7 @@ mipmap ic_launcher_foreground
 mipmap ic_launcher_round
 string androidx_startup
 string app_name
+string autofill
 string call_notification_answer_action
 string call_notification_answer_video_action
 string call_notification_decline_action
@@ -376,11 +379,13 @@ string m3c_time_picker_period_toggle_description
 string m3c_time_picker_pm
 string m3c_tooltip_long_press_label
 string m3c_tooltip_pane_description
+string mc2_snackbar_pane_title
 string navigation_menu
 string not_selected
 string range_end
 string range_start
 string selected
+string snackbar_pane_title
 string state_empty
 string state_off
 string state_on
@@ -393,7 +398,6 @@ string tooltip_label
 style DialogWindowTheme
 style EdgeToEdgeFloatingDialogTheme
 style EdgeToEdgeFloatingDialogWindowTheme
-style FloatingDialogTheme
 style FloatingDialogWindowTheme
 style TextAppearance_Compat_Notification
 style TextAppearance_Compat_Notification_Info

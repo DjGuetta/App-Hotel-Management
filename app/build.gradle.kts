@@ -96,7 +96,38 @@ android {
 }
 
 dependencies {
+//    implementation(libs.androidx.compose.ui.graphics)
+//    implementation(libs.androidx.navigation.compose)
+//    implementation(libs.androidx.compose.foundation)
+//    implementation(libs.androidx.compose.ui.text)
+//    implementation(libs.androidx.compose.material3)
+    // Compose Bill of Materials for consistent Compose library versions
+    // BOM (Bill of Materials) de Compose para versiones consistentes de librerías
+    val composeBom = platform("androidx.compose:compose-bom:2025.08.00")
+    implementation(composeBom)
+    testImplementation(composeBom)
+    androidTestImplementation(composeBom)
     implementation(libs.androidx.foundation.layout.android)
+    implementation(libs.androidx.foundation.layout.android)
+    implementation(libs.androidx.foundation.layout.android)
+    implementation(libs.androidx.foundation.layout.android)
+    implementation(libs.androidx.foundation.layout.android)
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx")
+    implementation("androidx.compose.runtime:runtime-livedata")
+    // Para las coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android")
+    // Lifecycle
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx")
+    // Navegación
+    implementation("androidx.navigation:navigation-compose")
+
+    // ViewModel
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose")
+
+    // Activity
+    implementation("androidx.activity:activity-compose")
     // Core library desugaring to support newer Java APIs on older Android versions
     // Desugar librerías core para soportar APIs Java nuevas en Android antiguos
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
@@ -141,7 +172,8 @@ dependencies {
     // Material Design 3 components for modern UI
     // Componentes Material Design 3 para UI moderna
     implementation(libs.androidx.material3)
-
+    //Más iconos
+    implementation("androidx.compose.material:material-icons-extended")
     // Unit testing framework JUnit
     // Framework para pruebas unitarias JUnit
     testImplementation(libs.junit)

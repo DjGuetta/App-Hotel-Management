@@ -1,4 +1,3 @@
-// En viewModel/BookingManagementViewModel.kt
 package com.example.hoteru.viewModel
 
 import android.util.Log
@@ -31,6 +30,7 @@ class BookingManagementViewModel : ViewModel() {
                 MongoDBConnection.getActiveBookingsByHotel(objectId)
                     .catch { e ->
                         Log.e(TAG, "Error en el flow de reservas: ${e.message}", e)
+                        // Asegurarse de que el loading se quita en caso de error en el Flow
                         _isLoading.value = false
                     }
                     .collect { bookingList ->
@@ -50,10 +50,26 @@ class BookingManagementViewModel : ViewModel() {
             val success = MongoDBConnection.updateBookingStatus(bookingId, newStatus)
             if (success) {
                 Log.d(TAG, "Estado de reserva actualizado con éxito.")
-                // Recargar la lista para reflejar el cambio
+                // Simplemente recargamos, la función loadActiveBookings ya maneja el estado de carga
                 loadActiveBookings(hotelId)
             } else {
                 Log.e(TAG, "Error al actualizar el estado de la reserva.")
+            }
+        }
+    }
+
+    // --- LÓGICA DE CREACIÓN ---
+    fun createBooking(booking: Booking) {
+        viewModelScope.launch {
+            val success = MongoDBConnection.insertBooking(booking)
+            if (success) {
+                Log.d(TAG, "Reserva creada con éxito. Recargando...")
+                // Después de insertar, simplemente llamamos a la función de carga.
+                // Esta función se encargará de gestionar el estado de "isLoading" de principio a fin.
+                loadActiveBookings(booking.hotelId.toHexString())
+            } else {
+                Log.e(TAG, "Error al crear la reserva.")
+                // Si la creación falla, podríamos querer mostrar un mensaje de error.
             }
         }
     }

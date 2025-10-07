@@ -4,66 +4,87 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.hoteru.model.Booking
 import com.example.hoteru.viewModel.BookingManagementViewModel
 import org.bson.types.ObjectId
 import java.text.SimpleDateFormat
-import java.util.Locale
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BookingManagementScreen(navController: NavController, hotelId: String) {
+fun BookingManagementScreen(navController: NavController, hotelId: String?) {
     val viewModel: BookingManagementViewModel = viewModel()
-    val bookings by viewModel.bookings.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val bookings by viewModel.bookings.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
-    // Cargar las reservas cuando la pantalla se inicia
+    // Estado para controlar la visibilidad del diálogo de creación
+    var showCreateDialog by remember { mutableStateOf(false) }
+
+    // Cargar las reservas cuando la pantalla se inicia, si el hotelId no es nulo
     LaunchedEffect(hotelId) {
-        viewModel.loadActiveBookings(hotelId)
+        if (!hotelId.isNullOrBlank()) {
+            viewModel.loadActiveBookings(hotelId)
+        }
     }
 
+    // Envolvemos todo en un Scaffold.
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Gestión de Reservas Activas") },
+                title = { Text("Gestión de Reservas") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showCreateDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Añadir Reserva", tint = Color.White)
+            }
         }
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
+                .padding(paddingValues), // Usar el padding del Scaffold
             contentAlignment = Alignment.Center
         ) {
             if (isLoading) {
                 CircularProgressIndicator()
+            } else if (hotelId.isNullOrBlank()) {
+                Text("Error: ID de hotel no válido.")
             } else if (bookings.isEmpty()) {
-                Text("No hay reservas activas en este momento.")
+                Text(
+                    "No hay reservas activas en este momento.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.Gray
+                )
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(bookings, key = { it._id }) { booking ->
+                    items(bookings, key = { it._id.toHexString() }) { booking ->
                         BookingCard(
                             booking = booking,
                             onUpdateStatus = { bookingId, newStatus ->
@@ -74,8 +95,20 @@ fun BookingManagementScreen(navController: NavController, hotelId: String) {
                 }
             }
         }
+
+        // Lógica para mostrar el diálogo de creación
+        if (showCreateDialog) {
+            BookingEditDialog(
+                onDismiss = { showCreateDialog = false },
+                onSave = { newBooking ->
+                    viewModel.createBooking(newBooking)
+                    showCreateDialog = false
+                }
+            )
+        }
     }
 }
+
 
 @Composable
 fun BookingCard(booking: Booking, onUpdateStatus: (ObjectId, String) -> Unit) {
@@ -89,9 +122,9 @@ fun BookingCard(booking: Booking, onUpdateStatus: (ObjectId, String) -> Unit) {
             Text(
                 text = "Huésped: ${booking.guestName}",
                 fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
+                style = MaterialTheme.typography.titleMedium
             )
-            Text("Email: ${booking.guestEmail}", fontSize = 14.sp)
+            Text("Email: ${booking.guestEmail}", fontSize = 14.sp, color = Color.Gray)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 "Check-in: ${dateFormatter.format(booking.checkInDate)}",
@@ -124,12 +157,12 @@ fun BookingCard(booking: Booking, onUpdateStatus: (ObjectId, String) -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                if (booking.status == "CONFIRMED") {
+                if (booking.status.equals("CONFIRMED", ignoreCase = true)) {
                     Button(onClick = { onUpdateStatus(booking._id, "CHECKED_IN") }) {
                         Text("Hacer Check-In")
                     }
                 }
-                if (booking.status == "CHECKED_IN") {
+                if (booking.status.equals("CHECKED_IN", ignoreCase = true)) {
                     Button(onClick = { onUpdateStatus(booking._id, "CHECKED_OUT") }) {
                         Text("Hacer Check-Out")
                     }
@@ -138,3 +171,4 @@ fun BookingCard(booking: Booking, onUpdateStatus: (ObjectId, String) -> Unit) {
         }
     }
 }
+

@@ -4,42 +4,51 @@ import org.bson.Document
 import org.bson.types.ObjectId
 import java.util.Date
 
-data class Booking(val _id: ObjectId = ObjectId(),
-                   val hotelId: ObjectId,
-                   val roomId: ObjectId,
-                   val guestName: String,
-                   val guestEmail: String,
-                   val checkInDate: Date,
-                   val checkOutDate: Date,
-                   val status: String = "CONFIRMED", // Ej: CONFIRMED, CHECKED_IN, CHECKED_OUT, CANCELLED
-                   val createdAt: Date = Date()
+// Representa una reserva individual en la base de datos
+data class Booking(
+    val _id: ObjectId = ObjectId(),
+    val hotelId: ObjectId,
+    val roomId: ObjectId,
+    val userId: String, // ID del usuario que reserva
+    val checkInDate: Date,
+    val checkOutDate: Date,
+    val guestName: String,
+    val guestEmail: String,
+    val totalCost: Double,
+    val status: String = "CONFIRMED", // CONFIRMED, CHECKED_IN, CHECKED_OUT, CANCELLED
+    val createdAt: Long = System.currentTimeMillis()
 ) {
+    fun toDocument(): Document {
+        return Document().apply {
+            put("_id", _id)
+            put("hotelId", hotelId)
+            put("roomId", roomId)
+            put("userId", userId)
+            put("checkInDate", checkInDate)
+            put("checkOutDate", checkOutDate)
+            put("guestName", guestName)
+            put("guestEmail", guestEmail)
+            put("totalCost", totalCost)
+            put("status", status)
+            put("createdAt", createdAt)
+        }
+    }
+
     companion object {
         fun fromDocument(doc: Document): Booking {
             return Booking(
                 _id = doc.getObjectId("_id"),
                 hotelId = doc.getObjectId("hotelId"),
                 roomId = doc.getObjectId("roomId"),
-                guestName = doc.getString("guestName"),
-                guestEmail = doc.getString("guestEmail"),
+                userId = doc.getString("userId"),
                 checkInDate = doc.getDate("checkInDate"),
                 checkOutDate = doc.getDate("checkOutDate"),
+                guestName = doc.getString("guestName"),
+                guestEmail = doc.getString("guestEmail") ?: "No proporcionado",
+                totalCost = doc.getDouble("totalCost"),
                 status = doc.getString("status"),
-                createdAt = doc.getDate("createdAt")
+                createdAt = doc.getLong("createdAt") ?: 0L
             )
         }
-    }
-
-    fun toDocument(): Document {
-        return Document()
-            .append("_id", _id)
-            .append("hotelId", hotelId)
-            .append("roomId", roomId)
-            .append("guestName", guestName)
-            .append("guestEmail", guestEmail)
-            .append("checkInDate", checkInDate)
-            .append("checkOutDate", checkOutDate)
-            .append("status", status)
-            .append("createdAt", createdAt)
     }
 }

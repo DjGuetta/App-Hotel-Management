@@ -16,9 +16,10 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import java.util.Calendar
 
+
 object MongoDBConnection {
 
-    private const val CONNECTION_DATABASE = "mongodb://192.168.49.143:27017"
+    private const val CONNECTION_DATABASE = "mongodb://10.55.96.177:27017"
     private const val DATABASE_NAME = "Hoteru"
     private val TAG = "MongoDBConnection"
 
@@ -332,6 +333,7 @@ object MongoDBConnection {
             Location()
         }
     }
+
     // --- FUNCIONES PARA RESERVAS (BOOKINGS) ---
 
     fun getActiveBookingsByHotel(hotelId: ObjectId): Flow<List<Booking>> = flow {
@@ -352,11 +354,61 @@ object MongoDBConnection {
         }
     }.flowOn(Dispatchers.IO)
 
+    // Obtiene todas las reservas con sus detalles (nombre de hotel, habitación y usuario)
+    fun getAllBookingDetails(): Flow<List<BookingDetails>> = flow {
+        Log.d(TAG, "Obteniendo todos los detalles de las reservas...")
+        val bookings = database.getCollection("Bookings").find()
+            .map { Booking.fromDocument(it) }
+            .toList()
+
+        if (bookings.isEmpty()) {
+            emit(emptyList())
+            return@flow
+        }
+
+        val hotelIds = bookings.map { it.hotelId }.distinct()
+        val roomIds = bookings.map { it.roomId }.distinct()
+        val userIds = bookings.map { it.userId }.distinct()
+
+        val hotelsMap = database.getCollection("Hoteles")
+            .find(Filters.`in`("_id", hotelIds))
+            .map { it.getObjectId("_id") to it.getString("name") }
+            .toList().toMap()
+
+        val roomsMap = database.getCollection("Rooms")
+            .find(Filters.`in`("_id", roomIds))
+            .map { it.getObjectId("_id") to it.getString("roomNumber") }
+            .toList().toMap()
+
+        val usersMap = database.getCollection("Users")
+            .find(Filters.`in`("id", userIds))
+            .map { it.getString("id") to it.getString("name") }
+            .toList().toMap()
+
+        val details = bookings.mapNotNull { booking ->
+            val hotelName = hotelsMap[booking.hotelId]
+            val roomNumber = roomsMap[booking.roomId]
+            val userName = usersMap[booking.userId]
+
+            if (hotelName != null && roomNumber != null && userName != null) {
+                BookingDetails(
+                    booking = booking,
+                    hotelName = hotelName,
+                    roomNumber = "Hab. $roomNumber",
+                    userName = userName // Añadido el parámetro faltante
+                )
+            } else {
+                Log.w(TAG, "Faltan datos para la reserva ${booking._id}. Hotel: $hotelName, Habitación: $roomNumber, Usuario: $userName")
+                null
+            }
+        }
+        emit(details)
+    }.flowOn(Dispatchers.IO)
+
     suspend fun insertBooking(booking: Booking): Boolean = withContext(Dispatchers.IO) {
         try {
             val collection = database.getCollection("Bookings")
             collection.insertOne(booking.toDocument())
-            // Aquí también se debería actualizar el estado de la habitación a "OCUPADA"
             updateRoomStatus(booking.roomId, "OCUPADA")
             true
         } catch (e: Exception) {
@@ -375,7 +427,7 @@ object MongoDBConnection {
             if (newStatus == "CHECKED_OUT" || newStatus == "CANCELLED") {
                 val booking = collection.find(filter).first()?.let { Booking.fromDocument(it) }
                 booking?.let {
-                    updateRoomStatus(it.roomId, "DISPONIBLE") // o "LIMPIEZA"
+                    updateRoomStatus(it.roomId, "DISPONIBLE")
                 }
             }
             result.modifiedCount > 0
@@ -404,6 +456,7 @@ object MongoDBConnection {
             // 2. Obtener los IDs únicos de hoteles y habitaciones de esas reservas
             val hotelIds = activeBookings.map { it.hotelId }.distinct()
             val roomIds = activeBookings.map { it.roomId }.distinct()
+            val userIds = activeBookings.map { it.userId }.distinct()
 
             // 3. Obtener los documentos de esos hoteles y habitaciones en una sola consulta
             val hotels = database.getCollection("Hoteles")
@@ -416,15 +469,22 @@ object MongoDBConnection {
                 .map { it.getObjectId("_id") to it.getString("roomNumber") }
                 .toList().toMap()
 
-            // 4. Combinar todo en una lista de BookingDetails
+            val users = database.getCollection("Users")
+                .find(Filters.`in`("_id", userIds))
+                .map { it.getString("_id") to it.getString("name") }
+                .toList().toMap()
+
+            // 4. Combinar en una lista de BookingDetails
             val bookingDetails = activeBookings.mapNotNull { booking ->
                 val hotelName = hotels[booking.hotelId]
                 val roomNumber = rooms[booking.roomId]
-                if (hotelName != null && roomNumber != null) {
+                val userName = users[booking.userId]
+                if (hotelName != null && roomNumber != null && userName != null) {
                     BookingDetails(
                         booking = booking,
                         hotelName = hotelName,
-                        roomNumber = "Hab. $roomNumber"
+                        roomNumber = "Hab. $roomNumber",
+                        userName = userName
                     )
                 } else {
                     null // Ignorar si no se encuentra el hotel o la habitación
@@ -444,7 +504,6 @@ object MongoDBConnection {
         return try {
             Log.d(TAG, "Calculando estadísticas del Dashboard...")
             coroutineScope {
-                // Lanzamos las 3 consultas en paralelo para máxima eficiencia
                 val hotelsCountDeferred = async(Dispatchers.IO) {
                     database.getCollection("Hoteles").countDocuments()
                 }

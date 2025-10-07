@@ -31,7 +31,7 @@ fun AdminDashboardScreen(
     navController: NavController,
     user: User?
 ) {
-    // 3. INYECTAR EL VIEWMODEL Y OBTENER LOS ESTADOS
+    // INYECTAR EL VIEWMODEL Y OBTENER LOS ESTADOS
     val viewModel: DashboardViewModel = viewModel()
     val stats by viewModel.stats.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -85,7 +85,7 @@ fun AdminDashboardScreen(
                         when (module.title) {
                             "Gestión de Hoteles" -> navController.navigate("hotel_management")
                             "Gestión de Habitaciones" -> navController.navigate("room_management")
-                            "Reservas" -> navController.navigate("global_reservations")
+                            "Reservas" -> navController.navigate("booking_management")
                             "Clientes" -> navController.navigate("customers")
                         }
                     }
@@ -96,7 +96,7 @@ fun AdminDashboardScreen(
 }
 
 @Composable
-fun QuickStatsRow(stats: DashboardStats) { // 5. EL COMPOSABLE AHORA RECIBE LOS DATOS
+fun QuickStatsRow(stats: DashboardStats) { //EL COMPOSABLE AHORA RECIBE LOS DATOS
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween

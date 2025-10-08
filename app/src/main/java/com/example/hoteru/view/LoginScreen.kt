@@ -134,14 +134,14 @@ fun HeaderSection() {
     ) {
         Image(
             painter = painterResource(R.drawable.icono),
-            contentDescription = "HotelHub Logo",
+            contentDescription = "Hoteru",
             modifier = Modifier.height(80.dp)
         )
 
         Spacer(modifier = Modifier.padding(8.dp))
 
         Text(
-            text = "HotelHub",
+            text = "AndeStay",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF011C21)

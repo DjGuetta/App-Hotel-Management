@@ -108,16 +108,18 @@ dependencies {
     implementation(composeBom)
     testImplementation(composeBom)
     androidTestImplementation(composeBom)
+    // Material Design 3 (includes NavigationBar, Icons, etc.)
+    implementation("androidx.compose.material3:material3")
+
+    // Material Icons (needed for Icons.Default.Place, etc.)
+    implementation ("androidx.compose.material:material-icons-extended")
 
     // Lifecycle + Compose (compatible versions for AGP 8.1.1)
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
     implementation("androidx.compose.runtime:runtime-livedata:1.5.4")
     implementation(libs.androidx.foundation.layout.android)
-    implementation(libs.androidx.foundation.layout.android)
-    implementation(libs.androidx.foundation.layout.android)
-    implementation(libs.androidx.foundation.layout.android)
-    implementation(libs.androidx.foundation.layout.android)
+
     implementation("androidx.lifecycle:lifecycle-runtime-ktx")
     implementation("androidx.compose.runtime:runtime-livedata")
     // Para las coroutines

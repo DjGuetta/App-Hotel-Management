@@ -1,0 +1,57 @@
+        # Archivos de build y paquetes generados
+        *.apk
+        *.aar
+        *.aab
+        *.ap_
+
+        # Archivos generados por el VM de Android (Dalvik/ART)
+        *.dex
+        *.class
+
+        # Archivos de la build de Gradle
+        .gradle/
+        build/
+        app/build/
+        **/build/
+        captures/
+
+        # Propiedades de la configuración local del SDK
+        local.properties
+
+        # Archivos de configuración de Android Studio e IntelliJ
+        .idea/
+        .idea/workspace.xml
+        .idea/libraries/
+        .idea/caches/
+        .idea/assetWizardSettings.xml
+        .idea/compiler.xml
+        .idea/modules.xml
+        *.iml
+
+        # Archivos del sistema operativo
+        .DS_Store
+        Thumbs.db
+
+        # Archivos de logs
+        *.log
+
+        # Archivos de navegación de Jetpack Compose
+        .navigation/
+
+        # Firmas de aplicación
+        *.keystore
+        *.jks
+
+        # Archivos generados por NDK
+        .externalNativeBuild/
+        obj/
+        .cxx/
+
+        # Gradle Wrapper
+        .gradle-wrapper/
+        !gradle-wrapper.jar
+
+        # Otras carpetas y archivos temporales
+        /out/
+        /bin/
+        /gen/

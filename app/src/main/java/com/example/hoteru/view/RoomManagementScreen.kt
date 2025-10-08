@@ -1,48 +1,46 @@
 package com.example.hoteru.view
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Bed
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.hoteru.model.Hotel
 import com.example.hoteru.model.Room
 import com.example.hoteru.viewModel.RoomManagementViewModel
 import org.bson.types.ObjectId
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import com.example.hoteru.ui.theme.*
 
-
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun RoomManagementScreen(
-    navController: NavController,
-    viewModel: RoomManagementViewModel = viewModel()
-) {
-
-    val rooms by viewModel.rooms.collectAsState()
+fun RoomManagementScreen(navController: NavController) {
+    val viewModel: RoomManagementViewModel = viewModel()
+    val roomsByHotel by viewModel.roomDetailsByHotel.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
+    val hotels by viewModel.hotels.collectAsState()
 
-    var showAddRoomDialog by remember { mutableStateOf(false) }
-
-    // Por ahora usamos un hotelId fijo - luego podemos pasarlo como parámetro
-    val sampleHotelId = ObjectId("6557a5b8c8f45b7a9c3e2a1b")
-
-    LaunchedEffect(Unit) {
-        viewModel.loadRoomsByHotel(sampleHotelId)
-    }
+    var showSelectHotelDialog by remember { mutableStateOf(false) }
+    var showAddRoomDialog by remember { mutableStateOf<Hotel?>(null) }
+    var roomToEdit by remember { mutableStateOf<Room?>(null) }
+    var showDeleteConfirmDialog by remember { mutableStateOf<Room?>(null) }
 
     Scaffold(
         topBar = {
@@ -52,100 +50,109 @@ fun RoomManagementScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
                     }
-                },
-                actions = {
-                    IconButton(onClick = { showAddRoomDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "Agregar habitación")
-                    }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddRoomDialog = true },
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar habitación")
+            FloatingActionButton(onClick = { showSelectHotelDialog = true }) {
+                Icon(Icons.Default.Add, contentDescription = "Añadir Habitación")
             }
         }
     ) { paddingValues ->
         Box(
             modifier = Modifier
-                .padding(paddingValues)
                 .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (rooms.isEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        Icons.Default.Bed,
-                        contentDescription = "Sin habitaciones",
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "No hay habitaciones registradas",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "Presiona el botón + para agregar una",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                }
+            if (isLoading && roomsByHotel.isEmpty()) {
+                CircularProgressIndicator()
+            } else if (roomsByHotel.isEmpty()) {
+                Text("No hay habitaciones registradas en ningún hotel.")
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp)
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(rooms) { room ->
-                        RoomCard(
-                            room = room,
-                            onEditClick = { viewModel.selectRoom(room) },
-                            onDeleteClick = { viewModel.deleteRoom(room._id) },
-                            onStatusChange = { newStatus ->
-                                viewModel.updateRoomStatus(room._id, newStatus)
-                            }
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
+                    roomsByHotel.forEach { (hotelName, roomDetails) ->
+                        stickyHeader {
+                            Text(
+                                text = hotelName,
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+                        items(roomDetails, key = { it.room._id }) { detail ->
+                            RoomCard(
+                                room = detail.room,
+                                onEditClick = { roomToEdit = detail.room },
+                                onDeleteClick = { showDeleteConfirmDialog = detail.room },
+                                onStatusChange = { room, newStatus ->
+                                    viewModel.updateRoomStatus(room._id, newStatus)
+                                }
+                            )
+                        }
                     }
-                }
-            }
-
-            // Mostrar mensajes de error/éxito
-            errorMessage?.let { message ->
-                LaunchedEffect(message) {
-                    // Podrías implementar un snackbar aquí
                 }
             }
         }
 
-        // Diálogo para agregar/editar habitación
-        if (showAddRoomDialog || viewModel.selectedRoom.collectAsState().value != null) {
+        if (showSelectHotelDialog) {
+            SelectHotelDialog(
+                hotels = hotels,
+                onDismiss = { showSelectHotelDialog = false },
+                onHotelSelected = { hotel ->
+                    showSelectHotelDialog = false
+                    showAddRoomDialog = hotel
+                }
+            )
+        }
+
+        showAddRoomDialog?.let { hotel ->
             RoomEditDialog(
-                room = viewModel.selectedRoom.collectAsState().value,
-                hotelId = sampleHotelId,
-                onDismiss = {
-                    showAddRoomDialog = false
-                    viewModel.selectRoom(null)
-                },
-                onSave = { room ->
-                    if (viewModel.selectedRoom.value != null) {
-                        viewModel.updateRoom(room)
-                    } else {
-                        viewModel.createRoom(room)
+                hotel = hotel,
+                onDismiss = { showAddRoomDialog = null },
+                onConfirm = { room ->
+                    viewModel.createRoom(room)
+                    showAddRoomDialog = null
+                }
+            )
+        }
+
+        roomToEdit?.let { room ->
+            RoomEditDialog(
+                roomToEdit = room,
+                onDismiss = { roomToEdit = null },
+                onConfirm = { updatedRoom ->
+                    viewModel.updateRoom(updatedRoom)
+                    roomToEdit = null
+                }
+            )
+        }
+
+        showDeleteConfirmDialog?.let { room ->
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirmDialog = null },
+                title = { Text("Confirmar Eliminación") },
+                text = { Text("¿Estás seguro de que quieres eliminar la habitación #${room.roomNumber}?") },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.deleteRoom(room._id)
+                            showDeleteConfirmDialog = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Eliminar")
                     }
-                    showAddRoomDialog = false
-                    viewModel.selectRoom(null)
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteConfirmDialog = null }) {
+                        Text("Cancelar")
+                    }
                 }
             )
         }
@@ -153,162 +160,276 @@ fun RoomManagementScreen(
 }
 
 @Composable
-fun RoomCard(
-    room: Room,
-    onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit,
-    onStatusChange: (String) -> Unit
+fun SelectHotelDialog(
+    hotels: List<Hotel>,
+    onDismiss: () -> Unit,
+    onHotelSelected: (Hotel) -> Unit
 ) {
-    var showStatusMenu by remember { mutableStateOf(false) }
-    // Mapa que relaciona el estado en Inglés (clave) con su traducción en Español (valor).
-    val statusTranslations = remember {
-        mapOf(
-            "Available" to "Disponible",
-            "Occupied" to "Ocupada",
-            "Cleaning" to "Limpieza",
-            "Maintenance" to "En Mantenimiento"
-        )
-    }
-    //val roomStatuses = listOf("Available", "Occupied", "Cleaning", "Maintenance")
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = when (room.status) {
-                "Available" -> MaterialTheme.colorScheme.surfaceVariant
-                "Occupied" -> MaterialTheme.colorScheme.errorContainer
-                "Maintenance" -> MaterialTheme.colorScheme.tertiaryContainer
-                "Cleaning" -> MaterialTheme.colorScheme.secondaryContainer
-                else -> MaterialTheme.colorScheme.surface
-            }
-        )
-    ) {
-        Column(
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top // Alineamos los elementos arriba
-            ) {
-                    Column(modifier = Modifier.weight(1f)) { // `weight` para que ocupe el espacio disponible ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Seleccionar Hotel", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(bottom = 16.dp))
+                LazyColumn {
+                    items(hotels, key = { it._id }) { hotel ->
                         Text(
-                            text = "Habitación ${room.roomNumber}",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                        Text(
-                            text = room.roomType,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = hotel.name,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onHotelSelected(hotel) }
+                                .padding(vertical = 12.dp)
                         )
                     }
-                //Precio
-                Text(
-                    text = "$${room.pricePerNight}/noche",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                }
             }
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = room.description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RoomCard(
+    room: Room,
+    onEditClick: (Room) -> Unit,
+    onDeleteClick: (Room) -> Unit,
+    onStatusChange: (Room, String) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.weight(1f)
             ) {
-                // Capacidad
+                Text(
+                    text = "Habitación ${room.roomNumber}",
+                    style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                )
+                Text(
+                    text = room.roomType,
+                    style = TextStyle(fontSize = 16.sp, color = Color.Gray)
+                )
+                Text(
+                    text = room.description,
+                    style = TextStyle(fontSize = 14.sp, color = Color.DarkGray)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Default.Bed,
+                        imageVector = Icons.Default.Person,
                         contentDescription = "Capacidad",
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        tint = Color.Gray
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "${room.capacity} personas",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        style = TextStyle(fontSize = 14.sp, color = Color.Gray)
                     )
                 }
+                if (room.amenities.isNotEmpty()) {
+                    Text(
+                        text = "Servicios: ${room.amenities.joinToString(", ")}",
+                        style = TextStyle(fontSize = 14.sp, color = Color.Gray)
+                    )
+                }
+            }
 
-                // Estado
-                Box {
-                    TextButton(onClick = { showStatusMenu = true }) {
-                        Text(
-                            text = statusTranslations[room.status] ?: room.status,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = when (room.status) {
-                                "Occupied" -> MaterialTheme.colorScheme.onErrorContainer
-                                else -> MaterialTheme.colorScheme.onPrimaryContainer
-                            }
-                        )
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxHeight()
+            ) {
+                Text(
+                    text = "$${room.pricePerNight}/noche",
+                    style = TextStyle(fontSize = 16.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                )
+
+                Column(horizontalAlignment = Alignment.End) {
+                    StatusDropdown(
+                        currentStatus = room.status,
+                        onStatusSelected = { newStatus -> onStatusChange(room, newStatus) }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row {
+                        TextButton(onClick = { onEditClick(room) }) {
+                            Text("Editar")
+                        }
+                        TextButton(onClick = { onDeleteClick(room) }) {
+                            Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                        }
                     }
-                    // Menú desplegable para cambiar el estado
-                    DropdownMenu(
-                        expanded = showStatusMenu,
-                        onDismissRequest = { showStatusMenu = false }
+                }
+            }
+        }
+    }
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun StatusDropdown(
+    currentStatus: String,
+    onStatusSelected: (String) -> Unit
+) {
+    val statuses = listOf("DISPONIBLE", "OCUPADA", "MANTENIMIENTO", "LIMPIEZA")
+    var expanded by remember { mutableStateOf(false) }
+
+    val statusColor = when (currentStatus.uppercase()) {
+        "DISPONIBLE" -> Color(0xFF4CAF50)
+        "OCUPADA" -> Color(0xFFF44336)
+        "MANTENIMIENTO" -> Color(0xFFFF9800)
+        "LIMPIEZA" -> Color(0xFF03A9F4)
+        else -> Color.Gray
+    }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
+        Row(
+            modifier = Modifier.menuAnchor().clickable { expanded = true },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = currentStatus,
+                style = TextStyle(fontWeight = FontWeight.Bold, color = statusColor)
+            )
+            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+        }
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            statuses.forEach { status ->
+                DropdownMenuItem(
+                    text = { Text(status) },
+                    onClick = {
+                        onStatusSelected(status)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+// --- VERSIÓN FINAL CON MENÚ DESPLEGABLE ---
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RoomEditDialog(
+    hotel: Hotel? = null,
+    roomToEdit: Room? = null,
+    onDismiss: () -> Unit,
+    onConfirm: (Room) -> Unit
+) {
+    val isEditing = roomToEdit != null
+    val title = if (isEditing) "Editar Habitación #${roomToEdit?.roomNumber}" else "Nueva Habitación para ${hotel?.name}"
+
+    var roomNumber by remember { mutableStateOf(roomToEdit?.roomNumber ?: "") }
+    var price by remember { mutableStateOf(roomToEdit?.pricePerNight?.toString() ?: "") }
+    var capacity by remember { mutableStateOf(roomToEdit?.capacity?.toString() ?: "") }
+    var description by remember { mutableStateOf(roomToEdit?.description ?: "") }
+
+    // --- CAMBIOS PARA EL MENÚ DESPLEGABLE DE TIPO DE HABITACIÓN ---
+    val roomTypes = listOf("Individual", "Doble", "Matrimonial", "Suite", "Familiar", "Apartamento")
+    var expanded by remember { mutableStateOf(false) }
+    var selectedRoomType by remember { mutableStateOf(roomToEdit?.roomType ?: roomTypes[0]) } // Inicia con el tipo actual o el primero de la lista
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(title, style = MaterialTheme.typography.titleLarge)
+                OutlinedTextField(value = roomNumber, onValueChange = { roomNumber = it }, label = { Text("Número de Habitación") }, modifier = Modifier.fillMaxWidth())
+
+                // --- MENÚ DESPLEGABLE PARA EL TIPO DE HABITACIÓN ---
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = selectedRoomType,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Tipo de Habitación") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
                     ) {
-                        statusTranslations.forEach { (statusInEnglish, statusInSpanish) ->
+                        roomTypes.forEach { type ->
                             DropdownMenuItem(
-                                text = { Text(statusInSpanish) },
+                                text = { Text(type) },
                                 onClick = {
-                                    onStatusChange(statusInEnglish)
-                                    showStatusMenu = false
+                                    selectedRoomType = type
+                                    expanded = false
                                 }
                             )
                         }
                     }
                 }
-            }
+                // --- FIN DEL MENÚ DESPLEGABLE ---
 
-            Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(value = price, onValueChange = { price = it }, label = { Text("Precio por Noche") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = capacity, onValueChange = { capacity = it }, label = { Text("Capacidad (personas)") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Descripción") }, modifier = Modifier.fillMaxWidth())
 
-            // Amenidades
-            if (room.amenities.isNotEmpty()) {
-                Text(
-                    text = "Servicios: ${room.amenities.joinToString(", ")}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Botones de acción
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(
-                    onClick = onEditClick,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
-                ){
-                    Text("Editar")
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                TextButton(
-                    onClick = onDeleteClick,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    Text("Eliminar")
+                    TextButton(onClick = onDismiss) { Text("Cancelar") }
+                    Spacer(Modifier.width(8.dp))
+                    Button(onClick = {
+                        val finalRoom = if (isEditing) {
+                            roomToEdit!!.copy(
+                                roomNumber = roomNumber,
+                                roomType = selectedRoomType, // Usar el tipo seleccionado
+                                pricePerNight = price.toDoubleOrNull() ?: 0.0,
+                                capacity = capacity.toIntOrNull() ?: 0,
+                                description = description
+                            )
+                        } else {
+                            Room(
+                                _id = ObjectId(),
+                                hotelId = hotel!!._id,
+                                roomNumber = roomNumber,
+                                roomType = selectedRoomType, // Usar el tipo seleccionado
+                                status = "DISPONIBLE",
+                                pricePerNight = price.toDoubleOrNull() ?: 0.0,
+                                amenities = listOf(),
+                                capacity = capacity.toIntOrNull() ?: 0,
+                                description = description
+                            )
+                        }
+                        onConfirm(finalRoom)
+                    }) {
+                        Text("Guardar")
+                    }
                 }
             }
         }

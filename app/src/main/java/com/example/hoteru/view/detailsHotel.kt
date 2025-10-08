@@ -1,4 +1,4 @@
-@file:Suppress("CAST_NEVER_SUCCEEDS")
+//@file:Suppress("CAST_NEVER_SUCCEEDS")
 
 package com.example.hoteru.view
 
@@ -60,7 +60,6 @@ fun Base64Image(
     } else {
         val imageBytes = Base64.decode(base64, Base64.DEFAULT)
         val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-
         Image(
             bitmap = bitmap.asImageBitmap(),
             contentDescription = "Hotel image",

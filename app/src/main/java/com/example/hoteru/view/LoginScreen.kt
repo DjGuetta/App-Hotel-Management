@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -43,7 +45,6 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(viewModel: LoginViewModel, navController: NavController) {
-
     val navigateToAdmin by viewModel.navigateToAdmin.observeAsState(false)
     val navigateToGuest by viewModel.navigateToGuest.observeAsState(false)
 
@@ -70,12 +71,12 @@ fun LoginScreen(viewModel: LoginViewModel, navController: NavController) {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        LoginContent(Modifier.align(Alignment.Center), viewModel, navController )
+        LoginContent(Modifier.align(Alignment.Center), viewModel)
     }
 }
 
 @Composable
-fun LoginContent(modifier: Modifier, viewModel: LoginViewModel, navController: NavController) {
+fun LoginContent(modifier: Modifier, viewModel: LoginViewModel) {
     val email: String by viewModel.email.observeAsState("")
     val password: String by viewModel.password.observeAsState("")
     val loginEnable: Boolean by viewModel.loginEnable.observeAsState(false)
@@ -89,19 +90,18 @@ fun LoginContent(modifier: Modifier, viewModel: LoginViewModel, navController: N
 
         Spacer(modifier = Modifier.padding(24.dp))
 
-        // Login Form
-        LoginFormSection(
-            email = email,
-            password = password,
-            onEmailChanged = { viewModel.onLoginChanged(it, password) },
-            onPasswordChanged = { viewModel.onLoginChanged(email, it) },
-            showError = showError,
-            navController
-        )
-
-        Spacer(modifier = Modifier.padding(16.dp))
-
-        // Login Button
+//        // Login Form
+//        LoginFormSection(
+//            email = email,
+//            password = password,
+//            onEmailChanged = { viewModel.onLoginChanged(it, password) },
+//            onPasswordChanged = { viewModel.onLoginChanged(email, it) },
+//            showError = showError
+//        )
+//
+//        Spacer(modifier = Modifier.padding(16.dp))
+//
+//        // Login Button
 //        LoginButtonSection(
 //            loginEnable = loginEnable,
 //            isLoading = isLoading,
@@ -134,14 +134,14 @@ fun HeaderSection() {
     ) {
         Image(
             painter = painterResource(R.drawable.icono),
-            contentDescription = "Hoteru",
+            contentDescription = "Andes State",
             modifier = Modifier.height(80.dp)
         )
 
         Spacer(modifier = Modifier.padding(8.dp))
 
         Text(
-            text = "AndeStay",
+            text = "Andes State",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF011C21)

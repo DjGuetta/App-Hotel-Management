@@ -23,20 +23,28 @@ class GlobalBookingViewModel : ViewModel() {
     private val TAG = "GlobalBookingVM"
 
     init {
-        loadAllActiveBookings()
+        loadAllBookings()
     }
 
-    fun loadAllActiveBookings() {
+    // Renombramos la función para que sea más genérica, ya que carga todas las reservas
+    fun loadAllBookings() {
         viewModelScope.launch {
             _isLoading.value = true
-            MongoDBConnection.getAllActiveBookingDetails()
+            // --- CORRECCIÓN AQUÍ ---
+            // Llamamos a la función que realmente existe en MongoDBConnection
+            MongoDBConnection.getAllBookingDetails()
                 .catch { e ->
                     Log.e(TAG, "Error en el flow de detalles de reservas: ${e.message}", e)
                     _isLoading.value = false
                 }
                 .collect { detailsList ->
-                    // Agrupamos las reservas por nombre de hotel para la UI
-                    _bookingDetails.value = detailsList.groupBy { it.hotelName }
+                    // Filtramos aquí para mostrar solo las activas, si es necesario,
+                    // o puedes ajustar la función en MongoDBConnection.
+                    // Por ahora, las agrupamos todas.
+                    val activeBookings = detailsList.filter {
+                        it.booking.status == "CONFIRMED" || it.booking.status == "CHECKED_IN"
+                    }
+                    _bookingDetails.value = activeBookings.groupBy { it.hotelName }
                     _isLoading.value = false
                     Log.d(TAG, "Reservas agrupadas por hotel: ${_bookingDetails.value.size} hoteles.")
                 }
@@ -45,10 +53,11 @@ class GlobalBookingViewModel : ViewModel() {
 
     fun updateBookingStatus(bookingId: ObjectId, newStatus: String) {
         viewModelScope.launch {
+            // Esta llamada es correcta, asumiendo que la función en MongoDBConnection está bien definida.
             val success = MongoDBConnection.updateBookingStatus(bookingId, newStatus)
             if (success) {
                 Log.d(TAG, "Estado de reserva actualizado. Recargando...")
-                loadAllActiveBookings() // Recargar toda la lista
+                loadAllBookings() // Recargar toda la lista
             } else {
                 Log.e(TAG, "Error al actualizar el estado de la reserva.")
             }

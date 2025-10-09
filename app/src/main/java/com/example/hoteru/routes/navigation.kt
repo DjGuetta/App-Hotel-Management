@@ -89,9 +89,11 @@ fun AppNavigation() {
             val id = backStackEntry.arguments?.getString("_id")
             DetailsHotelScreen(navController, id)
         }
-        composable("detailsroom/{_id}") { backStackEntry ->
-                val id = backStackEntry.arguments?.getString("_id")
-                DetailsRoomScreen(navController, id)
+        composable("detailsroom/{_idroom}/{_idhotel}") { backStackEntry ->
+                val idroom  = backStackEntry.arguments?.getString("_idroom")
+                val idhotel = backStackEntry.arguments?.getString("_idroom")
+
+                DetailsRoomScreen(navController, idroom, idhotel)
         }
         composable("roomsbyprices/{minimun}/{maximun}") { backStackEntry ->
             val minimun = backStackEntry.arguments?.getString("minimun")

@@ -167,23 +167,6 @@ class MapViewModel : ViewModel() {
      fun loadDetailsDocument(collection: String, id: String?){
         viewModelScope.launch(Dispatchers.IO) {
             val oneDocument = MongoDBConnection.oneDocument(collection, id)
-            println("room viewmodel $oneDocument")
-            println("room viewmodel $oneDocument")
-            println("room viewmodel $oneDocument")
-            println("room viewmodel $oneDocument")
-            println("room viewmodel $oneDocument")
-            println("room viewmodel $oneDocument")
-            println("room viewmodel $oneDocument")
-            println("room viewmodel $oneDocument")
-            println("room viewmodel $oneDocument")
-            println("room viewmodel $oneDocument")
-            println("room viewmodel $oneDocument")
-            println("room viewmodel $oneDocument")
-            println("room viewmodel $oneDocument")
-            println("room viewmodel $oneDocument")
-            println("room viewmodel $oneDocument")
-            println("room viewmodel $oneDocument")
-
             _onehotel.value = oneDocument
 
         }
@@ -192,25 +175,6 @@ class MapViewModel : ViewModel() {
     fun loadRooms(idHotel:String?){
         viewModelScope.launch(Dispatchers.IO) {
             val rooms = MongoDBConnection.getRooms(idHotel)
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-            println("cuartos $rooms")
-
             _rooms.value = rooms
         }
     }
@@ -252,13 +216,10 @@ class MapViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             val map = mutableMapOf<String, Document>()
             rooms.forEach { r ->
-                val hotelId = r.get("hotel_id")?.toString() ?: return@forEach
+                val hotelId = r.get("hotelId")?.toString() ?: return@forEach
                 if (!map.containsKey(hotelId)) {
-                    // Call loadDetailsDocument to update _onehotel
-                    loadDetailsDocument("Hotels", hotelId)
-                    // Get the document from _onehotel
-                    val hotelDoc = _onehotel.value
-                    hotelDoc?.let { map[hotelId] = it }
+                    val doc = MongoDBConnection.oneDocument("Hoteles", hotelId)
+                    if (doc != null) map[hotelId] = doc
                 }
             }
             _hotelsById.value = map
@@ -303,18 +264,6 @@ class MapViewModel : ViewModel() {
     fun listOfRoomsUnderTheirPrice(minimun: Int, maximun: Int){
         viewModelScope.launch(Dispatchers.IO) {
             val collection = MongoDBConnection.getRoomsUnderTheirPrices(minimun, maximun).toList()
-            println("coleccion viemodel $collection")
-            println("coleccion viemodel $collection")
-            println("coleccion viemodel $collection")
-            println("coleccion viemodel $collection")
-            println("coleccion viemodel $collection")
-            println("coleccion viemodel $collection")
-            println("coleccion viemodel $collection")
-            println("coleccion viemodel $collection")
-            println("coleccion viemodel $collection")
-            println("coleccion viemodel $collection")
-            println("coleccion viemodel $collection")
-
             _listOfRoomsUnderTheirPrice.value = collection
 
         }

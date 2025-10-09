@@ -1,13 +1,10 @@
 package com.example.hoteru.view
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,7 +26,7 @@ import org.bson.Document
 
 
 @Composable
-fun DetailsRoomScreen(navController: NavController, roomId: String?) {
+fun DetailsRoomScreen(navController: NavController, roomId: String?, hotelId: String?) {
     val viewHotel: MapViewModel = viewModel()
     val r by viewHotel.onehotel.collectAsState()
 
@@ -98,6 +95,9 @@ fun DetailsRoomScreen(navController: NavController, roomId: String?) {
                     base64 = img
                 )
             }
+            BookingFormNormalUser(hotelId, roomId)
+
         }
     }
+
 }

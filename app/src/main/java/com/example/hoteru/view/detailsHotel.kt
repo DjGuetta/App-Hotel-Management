@@ -1,8 +1,11 @@
 //@file:Suppress("CAST_NEVER_SUCCEEDS")
 
 package com.example.hoteru.view
-
+import java.text.SimpleDateFormat
+import java.util.Locale
 import android.graphics.BitmapFactory
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -10,7 +13,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.navigation.NavController
 import MapViewModel
-import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.util.Base64
 import androidx.compose.foundation.Image
@@ -31,16 +33,23 @@ import androidx.compose.ui.unit.dp
 
 import androidx.compose.ui.draw.clip
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import com.example.hoteru.model.Comment
+import com.example.hoteru.viewModel.logicComments
 import org.bson.types.ObjectId
+import java.util.Date
 
 
 @Composable
@@ -202,11 +211,92 @@ fun Base64Image(
 //}
 //
 //
+
+@Composable
+fun CommentsScreen(
+    hotelId: String?,
+    commentViewModel: logicComments = viewModel()
+) {
+    var commentText by remember  { mutableStateOf("") }
+
+    // Load comments when screen starts
+    LaunchedEffect(hotelId) {
+        commentViewModel.loadComments(hotelId)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+
+        Text(
+            text = "Comentarios",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // --- Add a new comment section ---
+        Text(
+            text = "Deja tu comentario:",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        OutlinedTextField(
+            value = commentText,
+            onValueChange = { commentText = it },
+            label = { Text("Escribe Algo...") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Styled button to match other buttons
+        Button(
+            onClick = {
+                val newComment = Comment(
+                    hotelId = hotelId,
+                    commentText = commentText,
+                    timestamp = Date()
+                )
+                commentViewModel.insertComment(newComment)
+                commentText = ""
+            },
+            modifier = Modifier
+                .align(Alignment.End)  // keep at the end/right side
+                .height(48.dp),        // standard button height
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Black,
+                contentColor = Color.White
+            ),
+            elevation = ButtonDefaults.buttonElevation(
+                defaultElevation = 6.dp,
+                pressedElevation = 8.dp
+            )
+        ) {
+            Text(
+                text = "Postea un comentario",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
 @Composable
 fun DetailsHotelScreen(navController: NavController, hotelId: String?) {
     val viewHotel: MapViewModel = viewModel()
+    val viewComment: logicComments = viewModel()
+
     val hotel by viewHotel.onehotel.collectAsState()
     val rooms by viewHotel.rooms.collectAsState()
+    val comments by viewComment.comments.collectAsState()
+
 
     LaunchedEffect(hotelId) {
         viewHotel.loadDetailsDocument("Hoteles", hotelId)
@@ -221,25 +311,55 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Hotel info
         item {
+            // Hotel Name
             Text(
-                text = hotel?.getString("name") ?: "not found..",
-                style = MaterialTheme.typography.titleLarge
+                text = hotel?.getString("name") ?: "Hotel not found",
+                style = MaterialTheme.typography.titleLarge,
+                color = Color.Black
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Description
             Text(
                 text = hotel?.getString("description") ?: "",
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.DarkGray
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Contact Information
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "📧 ${hotel?.getString("contactEmail") ?: "No email available"}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+                Text(
+                    text = "📞 ${hotel?.getString("contactPhone") ?: "No phone number"}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+                Text(
+                    text = "📍 ${hotel?.getString("address") ?: "No address"}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Rating
+            val rating = hotel?.getInteger("rating") ?: 0
             Text(
-                text = hotel?.getString("contactEmail") ?: "",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                text = hotel?.getString("contactPhone") ?: "",
-                style = MaterialTheme.typography.bodyMedium
+                text = "⭐ Calificación: $rating / 5",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Black
             )
         }
+
 
         // Hotel images
         items(images) { img ->
@@ -258,7 +378,7 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?) {
             Text(
                 text = "Habitaciones",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.primary,
+                color = Color.Black, // strong emphasis for section title
                 modifier = Modifier.padding(vertical = 12.dp)
             )
         }
@@ -290,7 +410,7 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?) {
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                onClick = { navController.navigate("detailsroom/$id") }
+                onClick = { navController.navigate("detailsroom/$id/$hotelId") }
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
@@ -326,6 +446,34 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?) {
                             base64 = img
                         )
                     }
+                }
+            }
+        }
+        item {
+            CommentsScreen(hotelId,viewComment)
+        }
+        items(comments) { comment ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Black),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    val dateFormatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                    Text(
+                        text = dateFormatter.format(comment.timestamp), // Convert Date to String
+                        style = MaterialTheme.typography.bodySmall,    // smaller for timestamp
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = comment.commentText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White
+                    )
                 }
             }
         }

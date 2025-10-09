@@ -26,6 +26,7 @@ mapsCompose = "2.7.2"
 composeBomVersion = "2024.06.00"
 mongodbDriverKotlin = "5.1.2"
 playServicesDrive = "17.0.0"
+foundationAndroid = "1.7.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -59,6 +60,7 @@ maps-compose = { group = "com.google.maps.android", name = "maps-compose", versi
 compose-bom = { group = "platform(", name = "compose-bom", version.ref = "composeBomVersion" }
 mongodb-driver-kotlin = { group = "org.mongodb", name = "mongodb-driver-kotlin", version.ref = "mongodbDriverKotlin" }
 play-services-drive = { group = "com.google.android.gms", name = "play-services-drive", version.ref = "playServicesDrive" }
+androidx-foundation-android = { group = "androidx.compose.foundation", name = "foundation-android", version.ref = "foundationAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

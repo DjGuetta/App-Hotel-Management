@@ -96,7 +96,8 @@ android {
 }
 
 dependencies {
-//    implementation(libs.androidx.compose.ui.graphics)
+implementation(libs.androidx.foundation.android)
+    //    implementation(libs.androidx.compose.ui.graphics)
 //    implementation(libs.androidx.navigation.compose)
 //    implementation(libs.androidx.compose.foundation)
 //    implementation(libs.androidx.compose.ui.text)

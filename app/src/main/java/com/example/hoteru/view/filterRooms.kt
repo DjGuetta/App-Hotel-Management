@@ -34,6 +34,7 @@ fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String
     val mapModel: MapViewModel = viewModel()
     val hotel by mapModel.onehotel.collectAsState()
     val rooms by mapModel.listOfRoomsUnderTheirPrice.collectAsState()
+    val hotelbyroom by mapModel.hotelsById.collectAsState()
 
     // Parse safely
     val minValue = minimum?.toIntOrNull() ?: 0
@@ -44,13 +45,19 @@ fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String
         mapModel.listOfRoomsUnderTheirPrice(minValue, maxValue)
     }
 
+    LaunchedEffect(rooms) {
+        if (rooms.isNotEmpty()) {
+            mapModel.loadHotelsForRooms(rooms)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
     ) {
         Text(
-            text = "Habitaciones",
+            text = "Habitaciones Filtrada por precios",
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(bottom = 12.dp)
@@ -62,7 +69,7 @@ fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(rooms) { r ->
+                items(rooms ) { r ->
                     val idroom = when (val value = r["_id"]) {
                         is ObjectId -> value.toHexString()
                         is String -> value
@@ -73,6 +80,7 @@ fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String
                         is String -> value
                         else -> null
                     }
+                    val hotelDoc = idhotel?.let { hotelbyroom[it] }
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -82,7 +90,7 @@ fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = "Hotel: ${hotel?.getString("name") ?: "Desconocido"}",
+                                text = "Hotel: ${hotelDoc?.getString("name") ?: "Desconocido"}",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                             )
                             Text(

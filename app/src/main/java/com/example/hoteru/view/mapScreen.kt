@@ -2,12 +2,13 @@
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.NavigationBar
 import androidx.navigation.compose.composable
-
 import android.Manifest
 import android.content.Context
 import android.graphics.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,10 +16,19 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.Button
@@ -59,7 +69,6 @@ import org.bson.types.ObjectId
 import androidx.compose.material3.*
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -70,6 +79,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.*
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.material.icons.filled.Hotel
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -94,6 +112,64 @@ fun bitmapDescriptorFromVector(
     }
     return BitmapDescriptorFactory.fromBitmap(bitmap)
 }
+@Composable
+fun HeaderOfTheMap() {
+    // The main container for the header, using a Surface for background/elevation if needed.
+    // In this case, just a simple Row will suffice for the content.
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp), // Add padding around the header
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween // Distribute space between logo/text and notification icon
+    ) {
+        // 1. Icon and Text/Subtitle Group
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Placeholder for the Hotel Icon from the image.
+            // Replace R.drawable.icono with your actual drawable resource if it's the black hotel icon.
+            // If you don't have that specific icon, you might use an Icon with a suitable ImageVector.
+            // Since your base uses painterResource, I'll keep that structure, but you need to ensure the drawable exists.
+
+            // NOTE: If you don't have the black icon, you could use:
+            // Icon(
+            //     imageVector = Icons.Filled.LocationCity, // Use a similar built-in icon
+            //     contentDescription = "Hotel Icon",
+            //     modifier = Modifier.size(48.dp), // Adjust size as needed
+            //     tint = Color.Black
+            // )
+
+            // Using Image and a placeholder drawable name from your base code structure:
+            Image(
+                painter = painterResource(R.drawable.icono), // REPLACE R.drawable.icono with your actual hotel icon drawable
+                contentDescription = "HotelHub Icon",
+                // The size in the image is quite large for the icon (appears around 48dp or more)
+                modifier = Modifier.size(48.dp)
+            )
+
+            Spacer(modifier = Modifier.width(12.dp)) // Space between icon and text column
+
+            // Text Column (HotelHub and Bienvenido, Usuario)
+            Column {
+                Text(
+                    text = "AndeStay",
+                    fontSize = 20.sp, // Adjusted size to better match the image
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black // Using black for the main text
+                )
+                Text(
+                    text = "Bienvenido, Usuario",
+                    fontSize = 14.sp, // Smaller font for the subtitle
+                    color = Color.Gray // Using a gray color for the subtitle
+                )
+            }
+        }
+
+        // 2. Notification Bell Icon with Red Dot
+//        NotificationBellIcon()
+    }
+}
 
 @Composable
 fun SearchEngine(cameraPositionState: CameraPositionState) {
@@ -105,9 +181,9 @@ fun SearchEngine(cameraPositionState: CameraPositionState) {
         value = searchText,
         onValueChange =  mapModel::onSearchTextChange, // updates the state
 //         onValueChange = { newText -> mapModel.onSearchTextChange(searchText) }
-        label = { Text("Search a hotel") },
+        label = { Text("Busca Un Hotel") },
         modifier = Modifier.fillMaxWidth(),
-         placeholder = { Text(text = "Search your hotel")},
+         placeholder = { Text(text = "Busca Tu Hotel")},
     )
     Spacer(modifier = Modifier.height(16.dp))
     LazyColumn(modifier = Modifier
@@ -117,6 +193,7 @@ fun SearchEngine(cameraPositionState: CameraPositionState) {
                 Text(
                     text = "${hotel.getString("name")}",
                     modifier = Modifier
+
                         .clickable{
                             val location = hotel.get("location", Document::class.java)
                             val coordinatesAny = location?.get("coordinates") as? List<*>
@@ -197,60 +274,78 @@ fun DropdownListHotel(navController: NavController, DropDownItems: List<Document
 
     }
 }
+
+fun CloseOrOpenDropDownListMenu(scope: CoroutineScope, drawerState: DrawerState){
+
+    scope.launch {
+        if (drawerState.isClosed) {
+            drawerState.open()  // 👉 open drawer
+        } else {
+            drawerState.close() // 👉 close drawer
+        }
+    }
+}
 @Composable
 fun DropDownListMenu(
     mapModel: MapViewModel,
     scope: CoroutineScope,
     drawerState: DrawerState
-){
+) {
     ModalDrawerSheet {
-        Text("Menu", modifier = Modifier.padding(16.dp))
-        Divider()
-        NavigationDrawerItem(
-            label = { Text("Motor de busqueda") },
-            selected = false,
-            onClick = {
-                mapModel.visibilitySearchEngine (true)
-                mapModel.visibilityPriceFilter (false)
-                mapModel.visibilityRatingFilter (false)
+        Box(modifier = Modifier.fillMaxSize()) {
+            // 👉 Close button at the top-right
+            IconButton(
+                onClick = { CloseOrOpenDropDownListMenu(scope, drawerState) },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+            ) {
+                Icon(Icons.Default.Close, contentDescription = "Close Menu")
             }
-        )
-        NavigationDrawerItem(
-            label = { Text("Filtro por precios") },
-            selected = false,
-            onClick = {
-                mapModel.visibilitySearchEngine (false)
-                mapModel.visibilityPriceFilter (true)
-                mapModel.visibilityRatingFilter (false)
-            }
-        )
 
-        NavigationDrawerItem(
-            label = { Text("Filtro por calificacion") },
-            selected = false,
-            onClick = {
-                mapModel.visibilitySearchEngine (false)
-                mapModel.visibilityPriceFilter (false)
-                mapModel.visibilityRatingFilter (true)
-            }
-        )
-        Button(
-            onClick = {
-                scope.launch {
-                    if (drawerState.isClosed) {
-                        drawerState.open()  // 👉 open drawer
-                    } else {
-                        drawerState.close() // 👉 close drawer
+            // 👉 Drawer content below
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 48.dp) // give space for the top button
+            ) {
+                Text("Menu", modifier = Modifier.padding(16.dp))
+                Divider()
+                NavigationDrawerItem(
+                    label = { Text("Motor de busqueda") },
+                    selected = false,
+                    onClick = {
+                        mapModel.visibilitySearchEngine(true)
+                        mapModel.visibilityPriceFilter(false)
+                        mapModel.visibilityRatingFilter(false)
+                        CloseOrOpenDropDownListMenu(scope, drawerState)
                     }
-                }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Filtro por precios") },
+                    selected = false,
+                    onClick = {
+                        mapModel.visibilitySearchEngine(false)
+                        mapModel.visibilityPriceFilter(true)
+                        mapModel.visibilityRatingFilter(false)
+                        CloseOrOpenDropDownListMenu(scope, drawerState)
+                    }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Filtro por calificación") },
+                    selected = false,
+                    onClick = {
+                        mapModel.visibilitySearchEngine(false)
+                        mapModel.visibilityPriceFilter(false)
+                        mapModel.visibilityRatingFilter(true)
+                        CloseOrOpenDropDownListMenu(scope, drawerState)
+                    }
+                )
             }
-        ) {
-            Text("X")
         }
-
     }
+}
 
-    }
 
 
 @Composable
@@ -258,60 +353,91 @@ fun PriceFilter(navController: NavController) {
     var minimum by remember { mutableStateOf("") }
     var maximum by remember { mutableStateOf("") }
 
-    Column {
+    Column (modifier = Modifier.fillMaxWidth()) {
         // First the row with the text fields
         Row {
             OutlinedTextField(
                 value = minimum,
                 onValueChange = { minimum = it },
-                label = { Text("Min Price") },
-                modifier = Modifier.weight(1f).padding(end = 8.dp)
+                label = { Text("Min Precio") },
+                modifier = Modifier.weight(1f).padding(end = 8.dp, bottom = 16.dp)
             )
             OutlinedTextField(
                 value = maximum,
                 onValueChange = { maximum = it },
-                label = { Text("Max Price") },
-                modifier = Modifier.weight(1f)
+                label = { Text("Max Precio") },
+                modifier = Modifier.weight(1f).padding(end = 8.dp, bottom = 16.dp)
             )
+
         }
         if (minimum.isNotEmpty() && maximum.isNotEmpty()) {
-            Text("desde $minimum hasta $maximum")
-            Button(
-                onClick = {
-                    navController.navigate("roomsbyprices/$minimum/$maximum")
-                }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally // center everything
             ) {
-                Text("Buscar")
+                // Centered text
+                Text(
+                    text = "Desde $minimum Hasta $maximum",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Black, // black color
+                    fontWeight = FontWeight.Normal,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                // Centered button
+                Button(
+                    onClick = { navController.navigate("roomsbyprices/$minimum/$maximum") },
+                    modifier = Modifier
+                        .width(120.dp)  // smaller width
+                        .height(36.dp), // smaller height
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Black, // button color black
+                        contentColor = Color.White // text inside button
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(
+                        defaultElevation = 4.dp,
+                        pressedElevation = 6.dp
+                    )
+                ) {
+                    Text(
+                        text = "Buscar",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
 
-
     }
-
-
     }
 @OptIn(ExperimentalMaterial3Api::class)
 
 @Composable
 fun RatingFilter(navController: NavController){
         var expanded by remember { mutableStateOf(false) }
-        val options = listOf("1", "2", "3", "4", "5")
+        val options = listOf("1⭐", "2⭐", "3⭐", "4⭐", "5⭐")
         var selectedOption by remember { mutableStateOf(options[0]) } // default: 1 star
 
         ExposedDropdownMenuBox(
             expanded = expanded,
-            onExpandedChange = { expanded = !expanded }
+            onExpandedChange = { expanded = !expanded },
+            modifier = Modifier.fillMaxWidth()
         ) {
             // Field showing current selection
             OutlinedTextField(
                 value = selectedOption,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Select rating") },
+                label = { Text("Seleccionar Calificacion") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
                     .menuAnchor()
                     .fillMaxWidth()
+                    .padding(bottom = 16.dp) // ✅ adds bottom spacing
+
             )
 
             // Dropdown options
@@ -321,11 +447,12 @@ fun RatingFilter(navController: NavController){
             ) {
                 options.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(option) },
+                        text = { Text(option ) },
                         onClick = {
                             selectedOption = option
                             expanded = false
-                            navController.navigate("hotelsbyrating/$selectedOption")
+                            val result = selectedOption.replace("⭐", "")
+                            navController.navigate("hotelsbyrating/$result")
 
                         }
                     )
@@ -358,6 +485,13 @@ fun BottomNavigationBar(navControllerHost: NavController) {
         )
 
         NavigationBarItem(
+            selected = currentRoute == "reservations",
+            onClick = { navControllerHost.navigate("reservations") },
+            icon = { Icon(Icons.Default.Book, contentDescription = "Reservations") },
+            label = { Text("Reservaciones") }
+        )
+
+        NavigationBarItem(
             selected = currentRoute == "your_hotel",
             onClick = { navControllerHost.navigate("your_hotel") },
             icon = { Icon(Icons.Default.Hotel, contentDescription = "Your Hotel") },
@@ -365,29 +499,14 @@ fun BottomNavigationBar(navControllerHost: NavController) {
         )
 
         NavigationBarItem(
-            selected = currentRoute == "reservations",
-            onClick = { navControllerHost.navigate("reservations") },
-            icon = { Icon(Icons.Default.Book, contentDescription = "Reservations") },
-            label = { Text("Reservaciones") }
+            selected = currentRoute == "admin_dashboard",
+            onClick = { navControllerHost.navigate("admin_dashboard") },
+            icon = { Icon(Icons.Default.AdminPanelSettings, contentDescription = "Admin") },
+            label = { Text("Admin") }
         )
     }
 }
 
-//@Composable
-//fun SlotOfNavigationBar(navControllerHost: Unit) {
-//    Scaffold(
-//        bottomBar = { BottomNavigationBar(navControllerHost) }
-//    ) { innerPadding ->
-//        NavHost(
-//            navController = navControllerHost,
-//            startDestination = "home",
-//            modifier = Modifier.padding(innerPadding)
-//        ) {
-//            composable("home") { MapScreen(navControllerHost) }
-//
-//        }
-//    }
-//}
 @Composable
 fun MapScreen(navController: NavController) {
     val mapModel: MapViewModel = viewModel()
@@ -495,7 +614,7 @@ fun MapScreen(navController: NavController) {
                             // Polyline from user to selected hotel
                             Polyline(
                                 points = listOf(current, dest),
-                                color = Color.Blue,
+                                color = Color.Black
                             )
 
 
@@ -505,77 +624,132 @@ fun MapScreen(navController: NavController) {
                     print("selected user location:$userLocation")
                 }
 
-
                 Column(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(16.dp)
+                        .fillMaxWidth()
+//                        .padding(top = 16.dp)
                         .background(Color.White)
                 ) {
-                    if (visibilitySearchEngine == true) {
-                        SearchEngine(cameraPositionState)
-                    }
-                    if (visibilityPriceFilter == true) {
-                        PriceFilter(navController)
-                    }
-                    if (visibilityRatingFilter == true) {
-                        RatingFilter(navController)
-                    }
-                    Button(
-                        onClick = {
-                            scope.launch {
-                                if (drawerState.isClosed) {
-                                    drawerState.open()  // 👉 open drawer
-                                } else {
-                                    drawerState.close() // 👉 close drawer
+                    HeaderOfTheMap()
+                    Column (
+                        modifier = Modifier
+                            .fillMaxWidth()
+//                            .padding(top = 16.dp)
+
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+//                            horizontalArrangement = Arrangement.SpaceBetween // Pushes items to edges
+                        ) {
+                            // LEFT SIDE: Filters section
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)  // takes remaining space
+                            ) {
+                                if (visibilitySearchEngine == true) {
+                                    SearchEngine(cameraPositionState)
+                                }
+                                if (visibilityPriceFilter == true) {
+                                    PriceFilter(navController)
+                                }
+                                if (visibilityRatingFilter == true) {
+                                    RatingFilter(navController)
                                 }
                             }
+
+                            Box(
+                                modifier = Modifier
+                                    .wrapContentSize()
+                                    .align(Alignment.CenterVertically)
+                            ){
+                                IconButton(
+                                    onClick = {
+                                        CloseOrOpenDropDownListMenu(scope, drawerState)
+                                    },
+                                ) {
+                                    Icon(Icons.Default.Menu,
+                                        contentDescription = "Menu",
+                                        modifier = Modifier
+                                            .size(64.dp) // ⬆️ Increases the clickable/touch area
+                                            .padding(4.dp))
+                                }
+
+                            }
+
+                            // RIGHT SIDE: Menu button
+
                         }
-                    ) {
-                        Text("=")
                     }
+
+                    // 👇 Row that places filters on the left and the button on the right
+
                 }
+
                 Box(
                     modifier = Modifier
-                    .matchParentSize()
-                ){
-                    Button(
+                        .matchParentSize()
+                ) {
+                    // Bottom-left arrow IconButton
+                    IconButton(
+                        onClick = { mapModel.visibilityWindow(true) },
                         modifier = Modifier
                             .align(Alignment.BottomStart)
                             .padding(16.dp)
-                            .background(Color.White),
-                        onClick = {
-                            mapModel.visibilityWindow(true)
-                        }
+                            .size(48.dp)
+                            .background(Color.Black, shape = RoundedCornerShape(12.dp))
                     ) {
-                        Text(text = "->")
+                        Icon(
+                            imageVector = Icons.Default.ArrowUpward,
+                            contentDescription = "Open Hotels",
+                            tint = Color.White
+                        )
                     }
 
+                    // Central popup window
                     if (visibilityWindow == true) {
                         Column(
                             modifier = Modifier
                                 .align(Alignment.Center)
-                                .padding(16.dp)
-                                .background(Color.White),
+                                .background(Color.White, shape = RoundedCornerShape(16.dp))
+                                .padding(15.dp)
+//                                .shadow(8.dp, shape = RoundedCornerShape(16.dp))
                         ) {
-                            DropdownListHotel(navController, hotels, mapModel)
-                            Button(onClick = {
-                                mapModel.visibilityWindow(false)
-                            }) {
-                                Text("X")
+                            IconButton(
+                                onClick = { mapModel.visibilityWindow(false) },
+                                modifier = Modifier.align(Alignment.End)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Close",
+                                    tint = Color.Black
+                                )
                             }
 
-                        }
+                            DropdownListHotel(navController, hotels, mapModel)
 
+
+                        }
                     }
+
+                    // Bottom-center "Remove the way" IconButton
                     if (userLocation != null && selectedLocation != null) {
-                        Button(
+                        IconButton(
+                            onClick = { mapModel.updateSelectedLocation(null) },
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
-                                .padding(16.dp),
-                            onClick = { mapModel.updateSelectedLocation(null) } // remove the way
+                                .padding(16.dp)
+                                .size(48.dp)
+                                .background(Color.Black, shape = RoundedCornerShape(12.dp))
                         ) {
-                            Text("Remove the way")
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Remove the way",
+                                tint = Color.White
+                            )
                         }
                     }
                 }

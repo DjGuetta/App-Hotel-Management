@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.hoteru.app-mergeDebugResources-58:/values-v30/values-v30.xml",
+            "outputFile": "com.example.hoteru.app-mergeDebugResources-45:/values-v30/values-v30.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\yefer\\.gradle\\caches\\8.13\\transforms\\abf67ca7d4fc43b6be307e95077c6639\\transformed\\material3-release\\res\\values-v30\\values-v30.xml",
+                    "source": "C:\\Users\\djgue\\.gradle\\caches\\8.13\\transforms\\df40091637060d955bca7efb755f15b8\\transformed\\material3\\res\\values-v30\\values-v30.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",

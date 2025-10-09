@@ -170,14 +170,14 @@ fun HeaderSection() {
     ) {
         Image(
             painter = painterResource(R.drawable.icono),
-            contentDescription = "Andes State",
+            contentDescription = "AndeStay",
             modifier = Modifier.height(80.dp)
         )
 
         Spacer(modifier = Modifier.padding(8.dp))
 
         Text(
-            text = "Andes State",
+            text = "AndeStay",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF011C21)

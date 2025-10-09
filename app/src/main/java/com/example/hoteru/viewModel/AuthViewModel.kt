@@ -22,7 +22,7 @@ data class AuthState(
 class AuthViewModel : ViewModel() {
     private fun isValidEmail(email: String): Boolean = Patterns.EMAIL_ADDRESS.matcher(email).matches()
 
-    private fun isValidPassword(password: String): Boolean = password.length >= 6
+    private fun isValidPassword(password: String): Boolean = password.length >= 8
 
     private val _authState = MutableStateFlow(AuthState())
     val authState = _authState.asStateFlow()

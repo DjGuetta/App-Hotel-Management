@@ -41,7 +41,7 @@ class BookingFormViewModel : ViewModel() {
     // Carga los datos iniciales cuando se edita una reserva existente
     fun loadDataForEditing(booking: Booking) {
         viewModelScope.launch {
-            // Usamos la función que realmente existe en MongoDBConnection.
+            // Usamos la función que existe en MongoDBConnection.
             // Esta función devuelve un Flow, por lo que usamos .firstOrNull() para obtener el primer valor.
             MongoDBConnection.getHotelWithRoomStats(booking.hotelId).firstOrNull()?.let { pair ->
                 val hotel = pair.first

@@ -13,7 +13,6 @@ import com.example.hoteru.view.AdminDashboardScreen
 import com.example.hoteru.view.LoginScreen
 import com.example.hoteru.view.HotelManagementScreen
 import com.example.hoteru.view.RoomManagementScreen
-import com.example.hoteru.view.ReservationsScreen
 import com.example.hoteru.view.CustomersScreen
 import com.example.hoteru.viewModel.AuthViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel

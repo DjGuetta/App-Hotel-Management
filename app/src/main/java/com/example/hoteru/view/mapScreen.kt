@@ -133,18 +133,6 @@ fun bitmapDescriptorFromVector(
     return BitmapDescriptorFactory.fromBitmap(bitmap)
 }
 
-// Versión simplificada para ImageVector (si la necesitas)
-@Composable
-fun bitmapDescriptorFromVector(
-    vectorResId: Int,
-    tint: Color = Color.Unspecified
-): BitmapDescriptor {
-    val context = LocalContext.current
-    return bitmapDescriptorFromVector(context, vectorResId, tint)
-}
-
-// --- EL RESTO DEL CÓDIGO (CORRECTO) ---
-
 @Composable
 fun HeaderOfTheMap(userName: String) {
     Row(
@@ -598,7 +586,7 @@ fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewM
                             state = rememberMarkerState(position = current),
                             icon = bitmapDescriptorFromVector(
                                 context = LocalContext.current,
-                                vectorResId = R.drawable.h,
+                                vectorResId = R.drawable.user,
                                 tint = Color.Blue
                             ),
                             title = "Estás aquí"

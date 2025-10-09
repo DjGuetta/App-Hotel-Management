@@ -94,6 +94,8 @@ android {
 }
 
 dependencies {
+    //Para hashear contraseñas de los usuarios
+    implementation("org.mindrot:jbcrypt:0.4")
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.foundation)

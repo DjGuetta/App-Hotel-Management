@@ -233,16 +233,27 @@ class HotelManagementViewModel : ViewModel() {
         _isEditing.value = false
     }
 
-    fun createNewHotel() {
-        _selectedHotel.value = Hotel(
+    fun createNewHotel(adminId: String) {
+        // Creamos un hotel nuevo, vacío pero estructuralmente completo.
+        val newEmptyHotel = Hotel(
+            _id = ObjectId(),           // Generamos un nuevo ID para este hotel
+            adminId = adminId,          // <-- ¡¡LA CLAVE DE TODO!! Asignamos el ID del admin
             name = "",
             address = "",
             city = "",
             state = "Táchira",
+            description = "",
+            contactEmail = "",
+            contactPhone = "",
             roomCount = 0,
-            availableRooms = 0
+            availableRooms = 0,
+            amenities = emptyList(),
+            images = emptyList(),
+            isActive = true,
+            createdAt = System.currentTimeMillis() // Opcional: registrar cuándo se empezó a crear
         )
-        _isEditing.value = true
+        _selectedHotel.value = newEmptyHotel // Lo ponemos como el hotel seleccionado
+        _isEditing.value = true              // Activamos el modo edición para que se abra el formulario
     }
 
     fun editHotel() {
@@ -288,18 +299,34 @@ class HotelManagementViewModel : ViewModel() {
 
     fun deleteHotel(hotel: Hotel) {
         viewModelScope.launch {
+            Log.d(TAG, "INICIANDO ELIMINACIÓN EN CASCADA PARA: ${hotel.name} (${hotel._id})")
             try {
-                val success = MongoDBConnection.deleteHotel(hotel._id)
+                // Paso 1: Eliminar todas las habitaciones del hotel.
+                val roomsDeleted = MongoDBConnection.deleteRoomsByHotelId(hotel._id)
+                if (!roomsDeleted) {
+                    // Opcional: podrías mostrar un error más específico, pero por ahora continuamos.
+                    Log.w(TAG, "Hubo un problema eliminando las habitaciones del hotel ${hotel._id}")
+                }
 
-                if (success) {
-                    _toastMessage.value = "✅ Hotel eliminado"
+                // Paso 2: Eliminar todas las reservas del hotel.
+                val bookingsDeleted = MongoDBConnection.deleteBookingsByHotelId(hotel._id)
+                if (!bookingsDeleted) {
+                    Log.w(TAG, "Hubo un problema eliminando las reservas del hotel ${hotel._id}")
+                }
+
+                // Paso 3: Eliminar el hotel en sí.
+                val hotelDeleted = MongoDBConnection.deleteHotel(hotel._id)
+
+                if (hotelDeleted) {
+                    _toastMessage.value = "✅ Hotel y todos sus datos eliminados"
                     _selectedHotel.value = null
-                    loadHotelsWithStats()
+                    loadHotelsWithStats() // Recargar la lista para que la UI se actualice
                 } else {
-                    _toastMessage.value = "❌ Error eliminando el hotel"
+                    _toastMessage.value = "❌ Error final al eliminar el hotel."
                 }
             } catch (e: Exception) {
-                _toastMessage.value = "💥 Error: ${e.message}"
+                _toastMessage.value = "💥 Error crítico durante la eliminación: ${e.message}"
+                Log.e(TAG, "Error crítico durante la eliminación en cascada", e)
             }
         }
     }

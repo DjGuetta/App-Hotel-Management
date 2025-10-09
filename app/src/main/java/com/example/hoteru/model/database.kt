@@ -14,17 +14,88 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
+import org.mindrot.jbcrypt.BCrypt
 import java.util.Calendar
 
 
 object MongoDBConnection {
 
-    private const val CONNECTION_DATABASE = "mongodb://10.55.96.177:27017"
+    private const val CONNECTION_DATABASE = "mongodb://192.168.0.249:27017"
     private const val DATABASE_NAME = "Hoteru"
     private val TAG = "MongoDBConnection"
 
     private val client: MongoClient = MongoClients.create(CONNECTION_DATABASE)
     val database: MongoDatabase = client.getDatabase(DATABASE_NAME)
+
+    suspend fun insertUser(user: User, password: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val userCollection = database.getCollection("Users")
+
+            val existingUser = userCollection.find(Filters.eq("email", user.email.lowercase())).first()
+            if (existingUser != null) {
+                Log.w(TAG, "Intento de registrar un email que ya existe: ${user.email}")
+                return@withContext false
+            }
+
+            val hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt())
+
+            // Usamos la nueva función de extensión para un código más limpio
+            val userDocument = user.toDocument(hashedPassword)
+
+            val result = userCollection.insertOne(userDocument)
+            Log.d(TAG, "Usuario insertado con éxito: ${result.insertedId}")
+            result.wasAcknowledged()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error insertando usuario: ${e.message}", e)
+            false
+        }
+    }
+
+    private fun documentToUser(doc: Document): User {
+        val userTypeString = doc.getString("userType")
+        val userType = when (userTypeString) {
+            UserType.Admin.value -> UserType.Admin
+            UserType.RegisteredUser.value -> UserType.RegisteredUser
+            else -> UserType.Guest
+        }
+        return User(
+            id = doc.getString("userId"),
+            email = doc.getString("email"),
+            firstName = doc.getString("firstName"), // Leemos el nuevo campo
+            lastName = doc.getString("lastName"),   // Leemos el nuevo campo
+            userType = userType,
+            phone = doc.getString("phone") ?: "",
+            createdAt = doc.getLong("createdAt") ?: 0L,
+            hotelId = doc.getString("hotelId")
+        )
+    }
+
+    /**
+     * Busca un usuario por su email y verifica su contraseña.
+     * Devuelve el objeto User si las credenciales son correctas, o null si no lo son.
+     */
+    suspend fun findUserByCredentials(email: String, password: String): User? = withContext(Dispatchers.IO) {
+        try {
+            val userCollection = database.getCollection("Users")
+            val userDocument = userCollection.find(Filters.eq("email", email.lowercase())).first()
+                ?: return@withContext null // Si no se encuentra el email, devuelve nulo
+
+            val hashedPassword = userDocument.getString("passwordHash")
+
+            // Comparamos la contraseña ingresada con el hash guardado
+            if (BCrypt.checkpw(password, hashedPassword)) {
+                // Si la contraseña es correcta, construimos y devolvemos el objeto User
+                Log.d(TAG, "Login exitoso para el usuario: $email")
+                documentToUser(userDocument)
+            } else {
+                Log.w(TAG, "Contraseña incorrecta para el usuario: $email")
+                null // Contraseña incorrecta
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error consultando usuario: ${e.message}", e)
+            null
+        }
+    }
 
     // --- FUNCIONES REACTIVAS SIMPLIFICADAS CON FLOWS ---
 
@@ -145,6 +216,34 @@ object MongoDBConnection {
             false
         }
     }
+    suspend fun deleteRoomsByHotelId(hotelId: ObjectId): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val collection = database.getCollection("Rooms")
+            val filter = Filters.eq("hotelId", hotelId)
+            val result = collection.deleteMany(filter)
+            Log.d(TAG, "Eliminación en cascada: Se eliminaron ${result.deletedCount} habitaciones para el hotel $hotelId")
+            result.wasAcknowledged()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error en cascada eliminando habitaciones: ${e.message}", e)
+            false
+        }
+    }
+
+    /**
+     * Elimina todas las reservas que pertenecen a un hotel específico.
+     */
+    suspend fun deleteBookingsByHotelId(hotelId: ObjectId): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val collection = database.getCollection("Bookings")
+            val filter = Filters.eq("hotelId", hotelId)
+            val result = collection.deleteMany(filter)
+            Log.d(TAG, "Eliminación en cascada: Se eliminaron ${result.deletedCount} reservas para el hotel $hotelId")
+            result.wasAcknowledged()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error en cascada eliminando reservas: ${e.message}", e)
+            false
+        }
+    }
 
     suspend fun insertRoom(document: Document): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -211,6 +310,28 @@ object MongoDBConnection {
             emit(emptyList())
         }
     }.flowOn(Dispatchers.IO)
+
+    suspend fun getHotelsByAdminId(adminId: String): List<Hotel> = withContext(Dispatchers.IO) {
+        if (adminId.isBlank()) {
+            return@withContext emptyList()
+        }
+        try {
+            // Obtenemos la colección de hoteles.
+            val hotelCollection = database.getCollection("Hoteles")
+            // Creamos un filtro para buscar por el campo "adminId"
+            val filter = Filters.eq("adminId", adminId)
+            // Ejecutamos la búsqueda y mapeamos cada documento al modelo Hotel
+            val hotels = hotelCollection.find(filter).map { document ->
+                documentToHotel(document)
+            }.toList()
+
+            Log.d(TAG, "Encontrados ${hotels.size} hoteles para el admin ID: $adminId")
+            hotels
+        } catch (e: Exception) {
+            Log.e("MongoDBConnection", "Error al obtener hoteles por Admin ID: ${e.message}")
+            emptyList() // Devolvemos una lista vacía en caso de error
+        }
+    }
 
     fun getHotelWithRoomStats(hotelId: ObjectId): Flow<Pair<Hotel, RoomStats>?> = flow {
         try {

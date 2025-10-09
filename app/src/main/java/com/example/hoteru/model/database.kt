@@ -1,6 +1,5 @@
 package com.example.hoteru.model
 
-import android.icu.util.Calendar
 import android.util.Log
 import com.mongodb.client.MongoClients
 import com.mongodb.client.MongoClient
@@ -25,6 +24,8 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import org.mindrot.jbcrypt.BCrypt
+import java.util.Calendar
 
 
 /**
@@ -61,12 +62,6 @@ object MongoDBConnection {
      */
     val database: MongoDatabase = client.getDatabase(DATABASE_NAME)
 
-    /**
-     * Retrieves a MongoDB collection by its name.
-     *
-     * @param collectionName The name of the collection to retrieve.
-     * @return A [MongoCollection] of BSON [Document]s representing the collection.
-     */
     fun getCollection(collectionName: String): MongoCollection<Document> {
         return database.getCollection(collectionName)
     }
@@ -106,54 +101,13 @@ object MongoDBConnection {
         return collectionrooms
     }
 
-//    fun getDocuments(name: String?): List<Document> {
+    //    fun getDocuments(name: String?): List<Document> {
 //        val collection = database.getCollection("Hoteles")
 //        return collection.find(eq("name", name)).toList()
 //    }
     fun getHotelsUnderRating(rating: Double): List<Document>{
         val collection = database.getCollection("Hoteles") // Rooms collection
         return collection.find(eq("rating", rating)).toList()
-    }
-    fun insertUserDb(user: User, password: String): Boolean {
-        val usersCollection: MongoCollection<Document> = database.getCollection("users")
-
-        // Check if email already exists
-        val existing = usersCollection.find(Document("email", user.email)).firstOrNull()
-        if (existing != null) {
-            println("Email already registered")
-            return false
-        }
-
-        // Convert User object to Document
-        val doc = Document(mapOf(
-            "id" to user.id,
-            "name" to user.name,
-            "email" to user.email,
-            "password" to password,  // For real apps, hash this!
-            "phone" to user.phone,
-//            "userType" to user.userType.name,
-            "hotelId" to user.hotelId,
-            "createdAt" to user.createdAt
-        ))
-
-        // Insert into collection
-        usersCollection.insertOne(doc)
-        println("User inserted successfully: ${user.email}")
-        return true
-    }
-
-    fun consultUserDb(email: String, password: String): Boolean {
-        val usersCollection: MongoCollection<Document> = database.getCollection("users")
-
-        // Find the user with matching email and password
-        val user = usersCollection.find(
-            and(
-                eq("email", email),
-                eq("password", password) // In production, compare hashed password
-            )
-        ).firstOrNull()
-
-        return user != null
     }
     fun insertCommentDb(comment: Comment): Boolean {
         val commentsCollection: MongoCollection<Document> = database.getCollection("Comments")
@@ -192,16 +146,77 @@ object MongoDBConnection {
                 )
             }.toList()
     }
+    suspend fun insertUser(user: User, password: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val userCollection = database.getCollection("Users")
 
-//    fun insertBooking(booking: Booking) {
-//        val collection = getCollection("Bookings")
-//        collection.insertOne(booking.toDocument())
-//    }
-//    fun getDocuments(name: String?): List<Document> {
-//        val collection = database.getCollection("Hotels")
-//        return collection.find(eq("name", name)).toList()
-//    }
+            val existingUser = userCollection.find(Filters.eq("email", user.email.lowercase())).first()
+            if (existingUser != null) {
+                Log.w(TAG, "Intento de registrar un email que ya existe: ${user.email}")
+                return@withContext false
+            }
 
+            val hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt())
+
+            // Usamos la nueva función de extensión para un código más limpio
+            val userDocument = user.toDocument(hashedPassword)
+
+            val result = userCollection.insertOne(userDocument)
+            Log.d(TAG, "Usuario insertado con éxito: ${result.insertedId}")
+            result.wasAcknowledged()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error insertando usuario: ${e.message}", e)
+            false
+        }
+    }
+
+    private fun documentToUser(doc: Document): User {
+        val userTypeString = doc.getString("userType")
+        val userType = when (userTypeString) {
+            UserType.Admin.value -> UserType.Admin
+            UserType.RegisteredUser.value -> UserType.RegisteredUser
+            else -> UserType.Guest
+        }
+        return User(
+            id = doc.getString("userId"),
+            email = doc.getString("email"),
+            firstName = doc.getString("firstName"), // Leemos el nuevo campo
+            lastName = doc.getString("lastName"),   // Leemos el nuevo campo
+            userType = userType,
+            phone = doc.getString("phone") ?: "",
+            createdAt = doc.getLong("createdAt") ?: 0L,
+            hotelId = doc.getString("hotelId")
+        )
+    }
+
+    /**
+     * Busca un usuario por su email y verifica su contraseña.
+     * Devuelve el objeto User si las credenciales son correctas, o null si no lo son.
+     */
+    suspend fun findUserByCredentials(email: String, password: String): User? = withContext(Dispatchers.IO) {
+        try {
+            val userCollection = database.getCollection("Users")
+            val userDocument = userCollection.find(Filters.eq("email", email.lowercase())).first()
+                ?: return@withContext null // Si no se encuentra el email, devuelve nulo
+
+            val hashedPassword = userDocument.getString("passwordHash")
+
+            // Comparamos la contraseña ingresada con el hash guardado
+            if (BCrypt.checkpw(password, hashedPassword)) {
+                // Si la contraseña es correcta, construimos y devolvemos el objeto User
+                Log.d(TAG, "Login exitoso para el usuario: $email")
+                documentToUser(userDocument)
+            } else {
+                Log.w(TAG, "Contraseña incorrecta para el usuario: $email")
+                null // Contraseña incorrecta
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error consultando usuario: ${e.message}", e)
+            null
+        }
+    }
+
+    // --- FUNCIONES REACTIVAS SIMPLIFICADAS CON FLOWS ---
 
     fun getHotels(): Flow<List<Hotel>> = flow {
         try {
@@ -299,27 +314,6 @@ object MongoDBConnection {
         }
     }
 
-    /*
-            Log.d(TAG, "Documento a insertar (sin _id): ${document.toJson()}")
-            val result = collection.insertOne(document)
-            Log.d(TAG, "Resultado de la inserción: ${result.wasAcknowledged()}")
-
-            if (!result.wasAcknowledged()) {
-                Log.d(TAG, "Hotel insertado correctamente, ID generado: ${result.insertedId}")
-                true
-            } else {
-                Log.d(TAG, "Inserción no fue admitida")
-                false
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error insetando hotel: ${e.message}",e)
-            false
-        }
-    }
-    */
-
-
-    // Función segura para actualizar hotel
     suspend fun updateHotel(id: ObjectId, document: Document): Boolean = withContext(Dispatchers.IO) {
         try {
             val collection = database.getCollection("Hoteles")
@@ -338,6 +332,34 @@ object MongoDBConnection {
             result.deletedCount > 0
         } catch (e: Exception) {
             Log.e(TAG, "Error eliminando hotel: ${e.message}")
+            false
+        }
+    }
+    suspend fun deleteRoomsByHotelId(hotelId: ObjectId): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val collection = database.getCollection("Rooms")
+            val filter = Filters.eq("hotelId", hotelId)
+            val result = collection.deleteMany(filter)
+            Log.d(TAG, "Eliminación en cascada: Se eliminaron ${result.deletedCount} habitaciones para el hotel $hotelId")
+            result.wasAcknowledged()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error en cascada eliminando habitaciones: ${e.message}", e)
+            false
+        }
+    }
+
+    /**
+     * Elimina todas las reservas que pertenecen a un hotel específico.
+     */
+    suspend fun deleteBookingsByHotelId(hotelId: ObjectId): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val collection = database.getCollection("Bookings")
+            val filter = Filters.eq("hotelId", hotelId)
+            val result = collection.deleteMany(filter)
+            Log.d(TAG, "Eliminación en cascada: Se eliminaron ${result.deletedCount} reservas para el hotel $hotelId")
+            result.wasAcknowledged()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error en cascada eliminando reservas: ${e.message}", e)
             false
         }
     }
@@ -407,6 +429,28 @@ object MongoDBConnection {
             emit(emptyList())
         }
     }.flowOn(Dispatchers.IO)
+
+    suspend fun getHotelsByAdminId(adminId: String): List<Hotel> = withContext(Dispatchers.IO) {
+        if (adminId.isBlank()) {
+            return@withContext emptyList()
+        }
+        try {
+            // Obtenemos la colección de hoteles.
+            val hotelCollection = database.getCollection("Hoteles")
+            // Creamos un filtro para buscar por el campo "adminId"
+            val filter = Filters.eq("adminId", adminId)
+            // Ejecutamos la búsqueda y mapeamos cada documento al modelo Hotel
+            val hotels = hotelCollection.find(filter).map { document ->
+                documentToHotel(document)
+            }.toList()
+
+            Log.d(TAG, "Encontrados ${hotels.size} hoteles para el admin ID: $adminId")
+            hotels
+        } catch (e: Exception) {
+            Log.e("MongoDBConnection", "Error al obtener hoteles por Admin ID: ${e.message}")
+            emptyList() // Devolvemos una lista vacía en caso de error
+        }
+    }
 
     fun getHotelWithRoomStats(hotelId: ObjectId): Flow<Pair<Hotel, RoomStats>?> = flow {
         try {
@@ -529,6 +573,7 @@ object MongoDBConnection {
             Location()
         }
     }
+
     // --- FUNCIONES PARA RESERVAS (BOOKINGS) ---
 
     fun getActiveBookingsByHotel(hotelId: ObjectId): Flow<List<Booking>> = flow {
@@ -634,67 +679,72 @@ object MongoDBConnection {
     }
     // --- FUNCIÓN PARA LA PANTALLA GLOBAL DE RESERVAS ---
 
-//    fun getAllActiveBookingDetails(): Flow<List<BookingDetails>> = flow {
-//        try {
-//            Log.d(TAG, "Obteniendo TODAS las reservas activas...")
-//            // 1. Obtener todas las reservas activas
-//            val collection = database.getCollection("Bookings")
-//            val activeStatuses = listOf("CONFIRMED", "CHECKED_IN")
-//            val activeBookings = collection.find(Filters.`in`("status", activeStatuses))
-//                .map { Booking.fromDocument(it) }
-//                .toList()
-//
-//            if (activeBookings.isEmpty()) {
-//                emit(emptyList())
-//                return@flow
-//            }
-//
-//            // 2. Obtener los IDs únicos de hoteles y habitaciones de esas reservas
-//            val hotelIds = activeBookings.map { it.hotelId }.distinct()
-//            val roomIds = activeBookings.map { it.roomId }.distinct()
-//
-//            // 3. Obtener los documentos de esos hoteles y habitaciones en una sola consulta
-//            val hotels = database.getCollection("Hoteles")
-//                .find(Filters.`in`("_id", hotelIds))
-//                .map { it.getObjectId("_id") to it.getString("name") }
-//                .toList().toMap()
-//
-//            val rooms = database.getCollection("Rooms")
-//                .find(Filters.`in`("_id", roomIds))
-//                .map { it.getObjectId("_id") to it.getString("roomNumber") }
-//                .toList().toMap()
-//
-//            // 4. Combinar todo en una lista de BookingDetails
-//            val bookingDetails = activeBookings.mapNotNull { booking ->
-//                val hotelName = hotels[booking.hotelId]
-//                val roomNumber = rooms[booking.roomId]
-//                val userName = users[booking.userId]
-//                if (hotelName != null && roomNumber != null && userName != null) {
-//                    BookingDetails(
-//                        booking = booking,
-//                        hotelName = hotelName,
-//                        roomNumber = "Hab. $roomNumber",
-//                        userName = userName
-//                    )
-//                } else {
-//                    null // Ignorar si no se encuentra el hotel o la habitación
-//                }
-//            }
-//
-//            Log.d(TAG, "Se encontraron ${bookingDetails.size} detalles de reservas.")
-//            emit(bookingDetails)
-//
-//        } catch (e: Exception) {
-//            Log.e(TAG, "Error obteniendo detalles de reservas globales: ${e.message}")
-//            emit(emptyList())
-//        }
-//    }.flowOn(Dispatchers.IO)
+    fun getAllActiveBookingDetails(): Flow<List<BookingDetails>> = flow {
+        try {
+            Log.d(TAG, "Obteniendo TODAS las reservas activas...")
+            // 1. Obtener todas las reservas activas
+            val collection = database.getCollection("Bookings")
+            val activeStatuses = listOf("CONFIRMED", "CHECKED_IN")
+            val activeBookings = collection.find(Filters.`in`("status", activeStatuses))
+                .map { Booking.fromDocument(it) }
+                .toList()
+
+            if (activeBookings.isEmpty()) {
+                emit(emptyList())
+                return@flow
+            }
+
+            // 2. Obtener los IDs únicos de hoteles y habitaciones de esas reservas
+            val hotelIds = activeBookings.map { it.hotelId }.distinct()
+            val roomIds = activeBookings.map { it.roomId }.distinct()
+            val userIds = activeBookings.map { it.userId }.distinct()
+
+            // 3. Obtener los documentos de esos hoteles y habitaciones en una sola consulta
+            val hotels = database.getCollection("Hoteles")
+                .find(Filters.`in`("_id", hotelIds))
+                .map { it.getObjectId("_id") to it.getString("name") }
+                .toList().toMap()
+
+            val rooms = database.getCollection("Rooms")
+                .find(Filters.`in`("_id", roomIds))
+                .map { it.getObjectId("_id") to it.getString("roomNumber") }
+                .toList().toMap()
+
+            val users = database.getCollection("Users")
+                .find(Filters.`in`("_id", userIds))
+                .map { it.getString("_id") to it.getString("name") }
+                .toList().toMap()
+
+            // 4. Combinar en una lista de BookingDetails
+            val bookingDetails = activeBookings.mapNotNull { booking ->
+                val hotelName = hotels[booking.hotelId]
+                val roomNumber = rooms[booking.roomId]
+                val userName = users[booking.userId]
+                if (hotelName != null && roomNumber != null && userName != null) {
+                    BookingDetails(
+                        booking = booking,
+                        hotelName = hotelName,
+                        roomNumber = "Hab. $roomNumber",
+                        userName = userName
+                    )
+                } else {
+                    null // Ignorar si no se encuentra el hotel o la habitación
+                }
+            }
+
+            Log.d(TAG, "Se encontraron ${bookingDetails.size} detalles de reservas.")
+            emit(bookingDetails)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error obteniendo detalles de reservas globales: ${e.message}")
+            emit(emptyList())
+        }
+    }.flowOn(Dispatchers.IO)
     // --- FUNCIÓN PARA EL DASHBOARD ---
     suspend fun getDashboardStats(): DashboardStats {
         return try {
             Log.d(TAG, "Calculando estadísticas del Dashboard...")
             coroutineScope {
-                // Lanzamos las 3 consultas en paralelo para máxima eficiencia
                 val hotelsCountDeferred = async(Dispatchers.IO) {
                     database.getCollection("Hoteles").countDocuments()
                 }

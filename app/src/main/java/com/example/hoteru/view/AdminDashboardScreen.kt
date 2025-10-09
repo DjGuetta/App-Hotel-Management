@@ -5,12 +5,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bed
 import androidx.compose.material.icons.filled.Hotel
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -26,77 +29,105 @@ import com.example.hoteru.model.DashboardStats
 import com.example.hoteru.model.User
 import com.example.hoteru.viewModel.DashboardViewModel
 
+@OptIn(ExperimentalMaterial3Api::class) // Necesario para TopAppBar
 @Composable
 fun AdminDashboardScreen(
     navController: NavController,
+    dashboardViewModel: DashboardViewModel = viewModel(),
     user: User?
 ) {
-    // INYECTAR EL VIEWMODEL Y OBTENER LOS ESTADOS
-    val viewModel: DashboardViewModel = viewModel()
-    val stats by viewModel.stats.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val stats by dashboardViewModel.stats.collectAsState()
+    val isLoading by dashboardViewModel.isLoading.collectAsState()
+    val hotels by dashboardViewModel.hotels.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // Header (sin cambios)
-        Text(
-            text = "Panel Administrador",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF011C21)
-        )
-
-        Text(
-            text = "Bienvenido, ${user?.name ?: "Administrador"}",
-            fontSize = 16.sp,
-            color = Color.Gray,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
-
-        // 4. PASAR LOS DATOS DINÁMICOS AL COMPOSABLE DE ESTADÍSTICAS
-        if (isLoading) {
-            // Muestra un indicador de carga mientras se obtienen los datos
-            Box(modifier = Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            // Una vez cargados, muestra las tarjetas con los datos reales
-            QuickStatsRow(stats = stats)
+    LaunchedEffect(user) {
+        user?.let {
+            dashboardViewModel.loadDashboardData(it.id)
         }
+    }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Panel Administrador") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver atrás"
+                        )
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp)
+        ) {
+            Spacer(modifier = Modifier.height(16.dp)) // Espacio para separar de la TopAppBar
 
-        // Módulos de Gestión (sin cambios)
-        Text(
-            text = "Módulos de Gestión",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
+            Text(
+                text = "Bienvenido, ${user?.fullName ?: "Administrador"}",
+                fontSize = 16.sp,
+                color = Color.Gray,
+                modifier = Modifier.padding(bottom = 24.dp)
+            )
 
-        LazyColumn {
-            items(adminModules) { module ->
-                AdminModuleCard(
-                    module = module,
-                    onCardClick = {
-                        when (module.title) {
-                            "Gestión de Hoteles" -> navController.navigate("hotel_management")
-                            "Gestión de Habitaciones" -> navController.navigate("room_management")
-                            "Reservas" -> navController.navigate("booking_management")
-                            "Clientes" -> navController.navigate("customers")
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(), // Ocupa todo el espacio restante
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(48.dp))
+                }
+            } else {
+                // Una vez que la carga finaliza, mostramos TODO el contenido.
+                Column {
+                    QuickStatsRow(stats = stats)
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(top = 16.dp)
+                    ) {
+                        items(adminModules) { module ->
+                            AdminModuleCard(
+                                module = module,
+                                onCardClick = {
+                                    when (module.title) {
+                                        "Gestión de Hoteles" -> navController.navigate("hotel_management")
+                                        "Gestión de Habitaciones" -> navController.navigate("room_management")
+                                        "Reservas" -> {
+                                            when {
+                                                hotels.size == 1 -> {
+                                                    val singleHotelId =
+                                                        hotels.first()._id.toHexString()
+                                                    navController.navigate("booking_management/$singleHotelId")
+                                                }
+
+                                                else -> {
+                                                    navController.navigate("hotel_management")
+                                                }
+                                            }
+                                        }
+
+                                        "Clientes" -> navController.navigate("customers")
+                                    }
+                                }
+                            )
                         }
                     }
-                )
+                }
             }
         }
     }
 }
-
 @Composable
-fun QuickStatsRow(stats: DashboardStats) { //EL COMPOSABLE AHORA RECIBE LOS DATOS
+fun QuickStatsRow(stats: DashboardStats) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween

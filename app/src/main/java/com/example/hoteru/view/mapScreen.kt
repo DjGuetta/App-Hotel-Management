@@ -1,56 +1,50 @@
-// ✅ works fine
-import androidx.compose.ui.unit.dp
-import androidx.compose.material3.NavigationBar
-import androidx.navigation.compose.composable
+package com.example.hoteru.view
+
 import android.Manifest
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.createBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.hoteru.R
+import com.example.hoteru.model.Hotel
 import com.example.hoteru.model.map_data.tachiraBounds
 import com.example.hoteru.model.map_data.tachiraLatLng
+import com.example.hoteru.viewModel.AuthState
+import com.example.hoteru.viewModel.AuthViewModel
+import com.example.hoteru.viewModel.MapViewModel
 import com.example.hoteru.viewModel.UserLocation
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -69,9 +63,9 @@ import org.bson.types.ObjectId
 import androidx.compose.material3.*
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.maps.android.compose.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
@@ -91,83 +85,96 @@ import androidx.compose.ui.unit.sp
 
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
-
+// --- FUNCIONES DE CONVERSIÓN ---
 
 @Composable
 fun bitmapDescriptorFromVector(
     context: Context,
     vectorResId: Int,
 ): BitmapDescriptor {
-    // Get the vector image from resources (or throw error if not found)
     val drawable = ContextCompat.getDrawable(context, vectorResId) ?: return BitmapDescriptorFactory.defaultMarker()
-    // Create a blank bitmap the same size as the drawable
-    val bitmap = createBitmap(drawable.intrinsicWidth, drawable.intrinsicWidth)
-    // Create a blank bitmap the same size as the drawable
-    Canvas(bitmap).apply {
-        drawable.setBounds(0,0,width,height)
-        drawable.draw(this)
-    }
+
+    val bitmap = Bitmap.createBitmap(
+        drawable.intrinsicWidth,
+        drawable.intrinsicHeight,
+        Bitmap.Config.ARGB_8888
+    )
+
+    val canvas = Canvas(bitmap)
+    drawable.setBounds(0, 0, canvas.width, canvas.height)
+    drawable.draw(canvas)
+
     return BitmapDescriptorFactory.fromBitmap(bitmap)
 }
+
 @Composable
-fun HeaderOfTheMap() {
-    // The main container for the header, using a Surface for background/elevation if needed.
-    // In this case, just a simple Row will suffice for the content.
+fun bitmapDescriptorFromVector(
+    context: Context,
+    vectorResId: Int,
+    tint: Color
+): BitmapDescriptor {
+    val drawable = ContextCompat.getDrawable(context, vectorResId) ?: return BitmapDescriptorFactory.defaultMarker()
+
+    // Aplicar tint si se especifica
+    if (tint != Color.Unspecified) {
+        drawable.setTint(tint.toArgb())
+    }
+
+    val bitmap = Bitmap.createBitmap(
+        drawable.intrinsicWidth,
+        drawable.intrinsicHeight,
+        Bitmap.Config.ARGB_8888
+    )
+
+    val canvas = Canvas(bitmap)
+    drawable.setBounds(0, 0, canvas.width, canvas.height)
+    drawable.draw(canvas)
+
+    return BitmapDescriptorFactory.fromBitmap(bitmap)
+}
+
+// Versión simplificada para ImageVector (si la necesitas)
+@Composable
+fun bitmapDescriptorFromVector(
+    vectorResId: Int,
+    tint: Color = Color.Unspecified
+): BitmapDescriptor {
+    val context = LocalContext.current
+    return bitmapDescriptorFromVector(context, vectorResId, tint)
+}
+
+// --- EL RESTO DEL CÓDIGO (CORRECTO) ---
+
+@Composable
+fun HeaderOfTheMap(userName: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp), // Add padding around the header
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween // Distribute space between logo/text and notification icon
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // 1. Icon and Text/Subtitle Group
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Placeholder for the Hotel Icon from the image.
-            // Replace R.drawable.icono with your actual drawable resource if it's the black hotel icon.
-            // If you don't have that specific icon, you might use an Icon with a suitable ImageVector.
-            // Since your base uses painterResource, I'll keep that structure, but you need to ensure the drawable exists.
-
-            // NOTE: If you don't have the black icon, you could use:
-            // Icon(
-            //     imageVector = Icons.Filled.LocationCity, // Use a similar built-in icon
-            //     contentDescription = "Hotel Icon",
-            //     modifier = Modifier.size(48.dp), // Adjust size as needed
-            //     tint = Color.Black
-            // )
-
-            // Using Image and a placeholder drawable name from your base code structure:
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Image(
-                painter = painterResource(R.drawable.icono), // REPLACE R.drawable.icono with your actual hotel icon drawable
-                contentDescription = "HotelHub Icon",
-                // The size in the image is quite large for the icon (appears around 48dp or more)
+                painter = painterResource(R.drawable.icono),
+                contentDescription = "AndeStay Icon",
                 modifier = Modifier.size(48.dp)
             )
-
-            Spacer(modifier = Modifier.width(12.dp)) // Space between icon and text column
-
-            // Text Column (HotelHub and Bienvenido, Usuario)
+            Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
                     text = "AndeStay",
-                    fontSize = 20.sp, // Adjusted size to better match the image
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black // Using black for the main text
+                    color = Color.Black
                 )
                 Text(
-                    text = "Bienvenido, Usuario",
-                    fontSize = 14.sp, // Smaller font for the subtitle
-                    color = Color.Gray // Using a gray color for the subtitle
+                    text = "Bienvenido, $userName",
+                    fontSize = 14.sp,
+                    color = Color.Gray
                 )
             }
         }
-
-        // 2. Notification Bell Icon with Red Dot
-//        NotificationBellIcon()
     }
 }
 
@@ -177,68 +184,70 @@ fun SearchEngine(cameraPositionState: CameraPositionState) {
     val searchText by mapModel.searchText.collectAsState()
     val hotels by mapModel.filteredHotels.collectAsState()
     val isSearching by mapModel.isSearching.collectAsState()
-     OutlinedTextField(
+
+    OutlinedTextField(
         value = searchText,
-        onValueChange =  mapModel::onSearchTextChange, // updates the state
-//         onValueChange = { newText -> mapModel.onSearchTextChange(searchText) }
+        onValueChange = mapModel::onSearchTextChange,
         label = { Text("Busca Un Hotel") },
         modifier = Modifier.fillMaxWidth(),
-         placeholder = { Text(text = "Busca Tu Hotel")},
+        placeholder = { Text(text = "Busca Tu Hotel") },
     )
     Spacer(modifier = Modifier.height(16.dp))
-    LazyColumn(modifier = Modifier
-        .fillMaxWidth()) {
-        if (searchText.isNotBlank()) {
-            items(hotels){ hotel ->
+
+    if (isSearching) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp), contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    } else if (searchText.isNotBlank()) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 200.dp)
+        ) {
+            items(hotels) { hotel ->
                 Text(
-                    text = "${hotel.getString("name")}",
+                    text = hotel.name,
                     modifier = Modifier
-
-                        .clickable{
-                            val location = hotel.get("location", Document::class.java)
-                            val coordinatesAny = location?.get("coordinates") as? List<*>
-
-                            val lat = coordinatesAny?.getOrNull(1)?.toString()?.toDoubleOrNull() ?: 0.0
-                            val lon = coordinatesAny?.getOrNull(0)?.toString()?.toDoubleOrNull() ?: 0.0
-
-
-                            mapModel.moveCamerato( cameraPositionState,LatLng(lat, lon))
+                        .fillMaxWidth()
+                        .clickable {
+                            val lat = hotel.location.coordinates[1]
+                            val lon = hotel.location.coordinates[0]
+                            mapModel.moveCameraTo(cameraPositionState, LatLng(lat, lon))
+                            mapModel.onSearchTextChange("")
                         }
-
-
+                        .padding(vertical = 12.dp, horizontal = 16.dp)
                 )
             }
         }
-
     }
-
-
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
-fun DropdownListHotel(navController: NavController, DropDownItems: List<Document>, mapModel: MapViewModel){
+fun DropdownListHotel(navController: NavController, DropDownItems: List<Hotel>, mapModel: MapViewModel) {
     var isExpanded by remember { mutableStateOf(false) }
-    var selectedText by rememberSaveable { mutableStateOf(DropDownItems.firstOrNull()?.getString("name") ?: "") }
+    var selectedText by rememberSaveable { mutableStateOf(DropDownItems.firstOrNull()?.name ?: "") }
     val locationPermissionState = rememberPermissionState(
         Manifest.permission.ACCESS_FINE_LOCATION
     )
 
-
     ExposedDropdownMenuBox(
         expanded = isExpanded,
-        onExpandedChange = {isExpanded = !isExpanded}
-    ){
+        onExpandedChange = { isExpanded = !isExpanded }
+    ) {
         OutlinedTextField(
             value = selectedText,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Select hotel") },
+            label = { Text("Selecciona un hotel") },
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded)
             },
-            modifier = Modifier
-                .menuAnchor()   // ✅ REQUIRED
+            modifier = Modifier.menuAnchor()
         )
         ExposedDropdownMenu(
             expanded = isExpanded,
@@ -246,45 +255,32 @@ fun DropdownListHotel(navController: NavController, DropDownItems: List<Document
         ) {
             DropDownItems.forEach { hotel ->
                 DropdownMenuItem(
-                    text = {Text( hotel.getString("name"))},
+                    text = { Text(hotel.name) },
                     onClick = {
-                        if (locationPermissionState.status.isGranted){
-                            val location = hotel.get("location", Document::class.java)
-                            val coordinatesAny = location?.get("coordinates") as? List<*>
-                            val lat = coordinatesAny?.getOrNull(1)?.toString()?.toDoubleOrNull() ?: 0.0
-                            val lon = coordinatesAny?.getOrNull(0)?.toString()?.toDoubleOrNull() ?: 0.0
-                            if (lat != null && lon != null) {
-                                // ✅ Instead of calling DrawWay directly, update state
-//                            selectedLocation = LatLng(lat, lon)
-                                selectedText = hotel.getString("name")
-                                mapModel.updateSelectedLocation(LatLng(lat, lon)) // ✅ updates ViewModel state
-                                mapModel.visibilityWindow(false)
-//
-                        }} else {
-                            // 🚨 Ask for permission
+                        if (locationPermissionState.status.isGranted) {
+                            selectedText = hotel.name
+                            mapModel.setVisibilityWindow(false)
+                        } else {
                             locationPermissionState.launchPermissionRequest()
                         }
-
                     },
                     contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                    )
-
+                )
             }
         }
-
     }
 }
 
-fun CloseOrOpenDropDownListMenu(scope: CoroutineScope, drawerState: DrawerState){
-
+fun CloseOrOpenDropDownListMenu(scope: CoroutineScope, drawerState: DrawerState) {
     scope.launch {
         if (drawerState.isClosed) {
-            drawerState.open()  // 👉 open drawer
+            drawerState.open()
         } else {
-            drawerState.close() // 👉 close drawer
+            drawerState.close()
         }
     }
 }
+
 @Composable
 fun DropDownListMenu(
     mapModel: MapViewModel,
@@ -293,7 +289,6 @@ fun DropDownListMenu(
 ) {
     ModalDrawerSheet {
         Box(modifier = Modifier.fillMaxSize()) {
-            // 👉 Close button at the top-right
             IconButton(
                 onClick = { CloseOrOpenDropDownListMenu(scope, drawerState) },
                 modifier = Modifier
@@ -303,21 +298,20 @@ fun DropDownListMenu(
                 Icon(Icons.Default.Close, contentDescription = "Close Menu")
             }
 
-            // 👉 Drawer content below
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 48.dp) // give space for the top button
+                    .padding(top = 48.dp)
             ) {
                 Text("Menu", modifier = Modifier.padding(16.dp))
                 Divider()
                 NavigationDrawerItem(
-                    label = { Text("Motor de busqueda") },
+                    label = { Text("Motor de búsqueda") },
                     selected = false,
                     onClick = {
-                        mapModel.visibilitySearchEngine(true)
-                        mapModel.visibilityPriceFilter(false)
-                        mapModel.visibilityRatingFilter(false)
+                        mapModel.setVisibilitySearchEngine(true)
+                        mapModel.setVisibilityPriceFilter(false)
+                        mapModel.setVisibilityRatingFilter(false)
                         CloseOrOpenDropDownListMenu(scope, drawerState)
                     }
                 )
@@ -325,9 +319,9 @@ fun DropDownListMenu(
                     label = { Text("Filtro por precios") },
                     selected = false,
                     onClick = {
-                        mapModel.visibilitySearchEngine(false)
-                        mapModel.visibilityPriceFilter(true)
-                        mapModel.visibilityRatingFilter(false)
+                        mapModel.setVisibilitySearchEngine(false)
+                        mapModel.setVisibilityPriceFilter(true)
+                        mapModel.setVisibilityRatingFilter(false)
                         CloseOrOpenDropDownListMenu(scope, drawerState)
                     }
                 )
@@ -335,9 +329,9 @@ fun DropDownListMenu(
                     label = { Text("Filtro por calificación") },
                     selected = false,
                     onClick = {
-                        mapModel.visibilitySearchEngine(false)
-                        mapModel.visibilityPriceFilter(false)
-                        mapModel.visibilityRatingFilter(true)
+                        mapModel.setVisibilitySearchEngine(false)
+                        mapModel.setVisibilityPriceFilter(false)
+                        mapModel.setVisibilityRatingFilter(true)
                         CloseOrOpenDropDownListMenu(scope, drawerState)
                     }
                 )
@@ -346,56 +340,53 @@ fun DropDownListMenu(
     }
 }
 
-
-
 @Composable
 fun PriceFilter(navController: NavController) {
     var minimum by remember { mutableStateOf("") }
     var maximum by remember { mutableStateOf("") }
 
-    Column (modifier = Modifier.fillMaxWidth()) {
-        // First the row with the text fields
+    Column(modifier = Modifier.fillMaxWidth()) {
         Row {
             OutlinedTextField(
                 value = minimum,
                 onValueChange = { minimum = it },
                 label = { Text("Min Precio") },
-                modifier = Modifier.weight(1f).padding(end = 8.dp, bottom = 16.dp)
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp, bottom = 16.dp)
             )
             OutlinedTextField(
                 value = maximum,
                 onValueChange = { maximum = it },
                 label = { Text("Max Precio") },
-                modifier = Modifier.weight(1f).padding(end = 8.dp, bottom = 16.dp)
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp, bottom = 16.dp)
             )
-
         }
         if (minimum.isNotEmpty() && maximum.isNotEmpty()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally // center everything
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Centered text
                 Text(
                     text = "Desde $minimum Hasta $maximum",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Black, // black color
+                    color = Color.Black,
                     fontWeight = FontWeight.Normal,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-
-                // Centered button
                 Button(
                     onClick = { navController.navigate("roomsbyprices/$minimum/$maximum") },
                     modifier = Modifier
-                        .width(120.dp)  // smaller width
-                        .height(36.dp), // smaller height
+                        .width(120.dp)
+                        .height(36.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Black, // button color black
-                        contentColor = Color.White // text inside button
+                        containerColor = Color.Black,
+                        contentColor = Color.White
                     ),
                     elevation = ButtonDefaults.buttonElevation(
                         defaultElevation = 4.dp,
@@ -410,11 +401,10 @@ fun PriceFilter(navController: NavController) {
                 }
             }
         }
+    }
+}
 
-    }
-    }
 @OptIn(ExperimentalMaterial3Api::class)
-
 @Composable
 fun RatingFilter(navController: NavController){
         var expanded by remember { mutableStateOf(false) }
@@ -463,13 +453,18 @@ fun RatingFilter(navController: NavController){
 
 
 @Composable
-fun BottomNavigationBar(navControllerHost: NavController) {
+fun BottomNavigationBar(navControllerHost: NavController, authState: AuthState) {
     val currentRoute = navControllerHost.currentBackStackEntryAsState().value?.destination?.route
+
+    // Usamos la propiedad `loginSuccess` que SÍ existe en tu AuthState.
+    val loggedInUser = authState.loginSuccess
 
     NavigationBar(
         containerColor = Color.White,
         tonalElevation = 4.dp
     ) {
+
+        // --- Item 1: Mapa ---
         NavigationBarItem(
             selected = currentRoute == "home",
             onClick = { navControllerHost.navigate("home") },
@@ -484,6 +479,7 @@ fun BottomNavigationBar(navControllerHost: NavController) {
             )
         )
 
+        // --- Item 2: Reservaciones ---
         NavigationBarItem(
             selected = currentRoute == "reservations",
             onClick = { navControllerHost.navigate("reservations") },
@@ -491,41 +487,51 @@ fun BottomNavigationBar(navControllerHost: NavController) {
             label = { Text("Reservaciones") }
         )
 
+        // --- Item 3: Tu Hotel ---
         NavigationBarItem(
             selected = currentRoute == "your_hotel",
             onClick = { navControllerHost.navigate("your_hotel") },
             icon = { Icon(Icons.Default.Hotel, contentDescription = "Your Hotel") },
             label = { Text("Tu Hotel") }
         )
+        // Esto asegura que el item se dibuje como parte de la barra.
+        if (loggedInUser?.isAdmin == true) {
+            NavigationBarItem(
+                selected = currentRoute?.startsWith("admin_dashboard") ?: false,
+                onClick = {
+                    navControllerHost.navigate("admin_dashboard/${loggedInUser.id}")
+                },
+                icon = { Icon(Icons.Default.AdminPanelSettings, contentDescription = "Admin") },
+                label = { Text("Admin") }
+            )
+        }
 
-        NavigationBarItem(
-            selected = currentRoute == "admin_dashboard",
-            onClick = { navControllerHost.navigate("admin_dashboard") },
-            icon = { Icon(Icons.Default.AdminPanelSettings, contentDescription = "Admin") },
-            label = { Text("Admin") }
-        )
     }
 }
-
 @Composable
-fun MapScreen(navController: NavController) {
+fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewModel()) {
     val mapModel: MapViewModel = viewModel()
     val userModel: UserLocation = viewModel()
-    val selectedLocation by mapModel.selectedLocation.collectAsState()
+
+    val hotels by mapModel.hotels.collectAsState()
+    val selectedHotel by mapModel.selectedHotel.collectAsState()
     val userLocation by userModel.userLocation.collectAsState()
     val visibilityWindow by mapModel.visibilityWindow.collectAsState()
     val visibilitySearchEngine by mapModel.visibilitySearchEngine.collectAsState()
     val visibilityPriceFilter by mapModel.visibilityPriceFilter.collectAsState()
     val visibilityRatingFilter by mapModel.visibilityRatingFilter.collectAsState()
+    val authState by authViewModel.authState.collectAsState()
+
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-
     LaunchedEffect(Unit) {
-        userModel.updateLocation()
+        try {
+            userModel.updateLocation()
+        } catch (e: SecurityException) {
+            println("SecurityException: Permiso de ubicación no concedido. ${e.message}")
+        }
     }
-
-    val hotels by mapModel.hotels.collectAsState()
 
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(tachiraLatLng, 10f)
@@ -533,17 +539,16 @@ fun MapScreen(navController: NavController) {
 
     val uiSettings by remember {
         mutableStateOf(
-            MapUiSettings(
-                mapToolbarEnabled = false // 🚫 removes the toolbar (blue arrow + Maps icon)
-            )
+            MapUiSettings(mapToolbarEnabled = false)
         )
     }
+
     Scaffold(
-        bottomBar = { BottomNavigationBar(navController) } // ✅ bottom navigation visible in MapScreen
+        bottomBar = { BottomNavigationBar(navControllerHost = navController, authState = authState) }
     ) { innerPadding ->
         ModalNavigationDrawer(
             drawerState = drawerState,
-            gesturesEnabled = false, // 🚫 disables swipe gesture
+            gesturesEnabled = false,
             drawerContent = {
                 DropDownListMenu(mapModel = mapModel, scope, drawerState)
             }
@@ -553,228 +558,133 @@ fun MapScreen(navController: NavController) {
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-
                 GoogleMap(
-                    Modifier.fillMaxSize(), cameraPositionState, properties = MapProperties(
+                    modifier = Modifier.fillMaxSize(),
+                    cameraPositionState = cameraPositionState,
+                    properties = MapProperties(
                         latLngBoundsForCameraTarget = tachiraBounds,
                         minZoomPreference = 8f,
-                        maxZoomPreference = 16f
+                        maxZoomPreference = 12f
                     ),
                     uiSettings = uiSettings
-
-
                 ) {
                     hotels.forEach { hotel ->
-                        val location = hotel.get("location", Document::class.java)
-                        val coordinatesAny = location?.get("coordinates") as? List<*>
-                        val id = when (val value = hotel["_id"]) {
-                            is ObjectId -> value.toHexString()   // if it's ObjectId
-                            is String -> value                    // if it's String
-                            else -> null                          // fallback if _id is missing
-                        }
-                        val lat = coordinatesAny?.getOrNull(1)?.toString()?.toDoubleOrNull() ?: 0.0
-                        val lon = coordinatesAny?.getOrNull(0)?.toString()?.toDoubleOrNull() ?: 0.0
-                        val markerState = rememberMarkerState(position = LatLng(lat, lon))
+                        val lat = hotel.location.coordinates[1]
+                        val lon = hotel.location.coordinates[0]
+                        val position = LatLng(lat, lon)
+                        val markerState = rememberMarkerState(position = position)
 
                         MarkerInfoWindow(
                             state = markerState,
                             icon = bitmapDescriptorFromVector(LocalContext.current, R.drawable.h),
                             onInfoWindowClick = {
-                                // Whole info window clicked
-                                navController.navigate("detailshotel/$id")
+                                navController.navigate("detailshotel/${hotel._id.toHexString()}")
                             }
                         ) { marker ->
                             Column(
                                 modifier = Modifier
-                                    .background(Color.White)
-                                    .padding(8.dp)
+                                    .background(Color.White, shape = RoundedCornerShape(8.dp))
+                                    .padding(12.dp)
+                                    .shadow(4.dp)
                             ) {
-                                Text(text = hotel.getString("name") ?: "")
-                                Text(text = hotel.getString("description") ?: "")
-
+                                Text(text = hotel.name, fontWeight = FontWeight.Bold)
+                                Text(text = hotel.description, maxLines = 2)
                             }
                         }
-
-
                     }
+
                     userLocation?.let { current ->
-                        selectedLocation?.let { dest ->
-                            println("User Location: $current")
-                            println("Destination: $dest")
-                            mapModel.visibilityButton(true)
-                            Marker(
-                                state = rememberMarkerState(position = current),
-                                icon = bitmapDescriptorFromVector(
-                                    LocalContext.current,
-                                    R.drawable.user
-                                ),
-                                title = "Estas aqui",
-                            )
+                        Marker(
+                            state = rememberMarkerState(position = current),
+                            icon = bitmapDescriptorFromVector(
+                                context = LocalContext.current,
+                                vectorResId = R.drawable.h,
+                                tint = Color.Blue
+                            ),
+                            title = "Estás aquí"
+                        )
 
-                            // Polyline from user to selected hotel
+                        selectedHotel?.let { hotel ->
+                            val destination = LatLng(hotel.location.coordinates[1], hotel.location.coordinates[0])
                             Polyline(
-                                points = listOf(current, dest),
-                                color = Color.Black
+                                points = listOf(current, destination),
+                                color = Color.Black,
+                                width = 5f
                             )
-
-
                         }
                     }
-                    println("selected location:$selectedLocation")
-                    print("selected user location:$userLocation")
                 }
 
                 Column(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .fillMaxWidth()
-//                        .padding(top = 16.dp)
                         .background(Color.White)
                 ) {
-                    HeaderOfTheMap()
-                    Column (
+                    HeaderOfTheMap(userName = authState.loginSuccess?.firstName ?: "Usuario")
+
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-//                            .padding(top = 16.dp)
-
+                            .padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-//                            horizontalArrangement = Arrangement.SpaceBetween // Pushes items to edges
-                        ) {
-                            // LEFT SIDE: Filters section
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)  // takes remaining space
-                            ) {
-                                if (visibilitySearchEngine == true) {
-                                    SearchEngine(cameraPositionState)
-                                }
-                                if (visibilityPriceFilter == true) {
-                                    PriceFilter(navController)
-                                }
-                                if (visibilityRatingFilter == true) {
-                                    RatingFilter(navController)
-                                }
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .wrapContentSize()
-                                    .align(Alignment.CenterVertically)
-                            ){
-                                IconButton(
-                                    onClick = {
-                                        CloseOrOpenDropDownListMenu(scope, drawerState)
-                                    },
-                                ) {
-                                    Icon(Icons.Default.Menu,
-                                        contentDescription = "Menu",
-                                        modifier = Modifier
-                                            .size(64.dp) // ⬆️ Increases the clickable/touch area
-                                            .padding(4.dp))
-                                }
-
-                            }
-
-                            // RIGHT SIDE: Menu button
-
+                        Column(modifier = Modifier.weight(1f)) {
+                            if (visibilitySearchEngine) SearchEngine(cameraPositionState)
+                            if (visibilityPriceFilter) PriceFilter(navController)
+                            if (visibilityRatingFilter) RatingFilter(navController)
+                        }
+                        IconButton(onClick = { CloseOrOpenDropDownListMenu(scope, drawerState) }) {
+                            Icon(Icons.Default.Menu, "Menu", modifier = Modifier.size(40.dp))
                         }
                     }
-
-                    // 👇 Row that places filters on the left and the button on the right
-
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                ) {
-                    // Bottom-left arrow IconButton
+                Box(modifier = Modifier.fillMaxSize()) {
                     IconButton(
-                        onClick = { mapModel.visibilityWindow(true) },
+                        onClick = { mapModel.setVisibilityWindow(true) },
                         modifier = Modifier
                             .align(Alignment.BottomStart)
                             .padding(16.dp)
                             .size(48.dp)
                             .background(Color.Black, shape = RoundedCornerShape(12.dp))
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowUpward,
-                            contentDescription = "Open Hotels",
-                            tint = Color.White
-                        )
+                        Icon(Icons.Default.ArrowUpward, "Open Hotels", tint = Color.White)
                     }
 
-                    // Central popup window
-                    if (visibilityWindow == true) {
+                    if (visibilityWindow) {
                         Column(
                             modifier = Modifier
                                 .align(Alignment.Center)
                                 .background(Color.White, shape = RoundedCornerShape(16.dp))
-                                .padding(15.dp)
-//                                .shadow(8.dp, shape = RoundedCornerShape(16.dp))
+                                .padding(16.dp)
+                                .shadow(8.dp, shape = RoundedCornerShape(16.dp))
                         ) {
                             IconButton(
-                                onClick = { mapModel.visibilityWindow(false) },
+                                onClick = { mapModel.setVisibilityWindow(false) },
                                 modifier = Modifier.align(Alignment.End)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Close",
-                                    tint = Color.Black
-                                )
+                                Icon(Icons.Default.Close, "Close", tint = Color.Black)
                             }
-
                             DropdownListHotel(navController, hotels, mapModel)
-
-
                         }
                     }
 
-                    // Bottom-center "Remove the way" IconButton
-                    if (userLocation != null && selectedLocation != null) {
+                    if (userLocation != null && selectedHotel != null) {
                         IconButton(
-                            onClick = { mapModel.updateSelectedLocation(null) },
+                            onClick = { /* Lógica para deseleccionar el hotel */ },
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
                                 .padding(16.dp)
                                 .size(48.dp)
                                 .background(Color.Black, shape = RoundedCornerShape(12.dp))
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Remove the way",
-                                tint = Color.White
-                            )
+                            Icon(Icons.Default.Close, "Remove the way", tint = Color.White)
                         }
                     }
                 }
-
-
-
             }
-
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

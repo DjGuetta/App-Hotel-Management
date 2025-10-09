@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -22,11 +23,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.error
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -37,92 +42,123 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.hoteru.R
-import com.example.hoteru.viewModel.LoginViewModel
-import com.example.hoteru.viewModel.UserLogic
-import kotlinx.coroutines.CoroutineScope
+import com.example.hoteru.viewModel.AuthViewModel
 import kotlinx.coroutines.launch
 
 
 @Composable
-fun LoginScreen(viewModel: LoginViewModel, navController: NavController) {
-    val navigateToAdmin by viewModel.navigateToAdmin.observeAsState(false)
-    val navigateToGuest by viewModel.navigateToGuest.observeAsState(false)
+fun LoginScreen(
+    navController: NavController,
+    authViewModel: AuthViewModel = viewModel() // Usamos el nuevo ViewModel
+) {
+    val authState by authViewModel.authState.collectAsState()
 
-    LaunchedEffect(navigateToAdmin) {
-        if (navigateToAdmin) {
-            navController.navigate("admin_dashboard") {
-                popUpTo("login") { inclusive = true }
+    // Reacciona al estado de login exitoso
+    LaunchedEffect(authState) {
+        authState.loginSuccess?.let { user ->
+            authViewModel.onEventHandled() // Limpia el estado para evitar re-navegación
+
+            // Todos los usuarios, admin o no, van a "home" después del login
+            navController.navigate("home") {
+                popUpTo("login") { inclusive = true } // Limpia el historial para no volver al login
             }
-            viewModel.onNavigationCompleted()
         }
     }
 
-    LaunchedEffect(navigateToGuest) {
-        if (navigateToGuest) {
-            navController.navigate("guest_dashboard") {
-                popUpTo("login") { inclusive = true }
-            }
-            viewModel.onNavigationCompleted()
-        }
-    }
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
+        // Pasamos el estado y los eventos necesarios
+        var email by remember { mutableStateOf("") }
+        var password by remember { mutableStateOf("") }
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        LoginContent(Modifier.align(Alignment.Center), viewModel)
+        Column(modifier = Modifier.align(Alignment.Center),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+
+            // Header
+            HeaderSection()
+
+            Spacer(modifier = Modifier.padding(24.dp))
+
+            LoginFormSection(
+                email = email,
+                password = password,
+                onEmailChanged = { email = it },
+                onPasswordChanged = { password = it },
+                showError = authState.error
+            )
+
+            Spacer(modifier = Modifier.padding(24.dp))
+
+            LoginButtonSection(
+                isLoading = authState.isLoading,
+                onLoginSelected = {
+                    authViewModel.login(email, password)
+                }
+            )
+
+            Spacer(modifier = Modifier.padding(16.dp))
+
+            GuestOptionSection(
+                onGuestSelected = {  },
+                onRegisterSelected = { navController.navigate("register") } // <-- Navegación al registro
+            )
+
+            //Footer
+            FooterSection()
+        }
     }
 }
 
 @Composable
-fun LoginContent(modifier: Modifier, viewModel: LoginViewModel) {
-    val email: String by viewModel.email.observeAsState("")
-    val password: String by viewModel.password.observeAsState("")
-    val loginEnable: Boolean by viewModel.loginEnable.observeAsState(false)
-    val isLoading: Boolean by viewModel.isLoading.observeAsState(false)
-    val showError: String? by viewModel.showError.observeAsState(null)
-    val coroutineScope = rememberCoroutineScope()
+fun LoginButtonSection(
+    isLoading: Boolean,
+    onLoginSelected: () -> Unit
+) {
+    Button(
+        onClick = onLoginSelected,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp),
+        enabled = !isLoading,
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+        } else {
+            Text("Iniciar Sesión")
+        }
+    }
+}
 
-    Column(modifier = modifier) {
-        // Header
-        HeaderSection()
-
-        Spacer(modifier = Modifier.padding(24.dp))
-
-//        // Login Form
-//        LoginFormSection(
-//            email = email,
-//            password = password,
-//            onEmailChanged = { viewModel.onLoginChanged(it, password) },
-//            onPasswordChanged = { viewModel.onLoginChanged(email, it) },
-//            showError = showError
-//        )
-//
-//        Spacer(modifier = Modifier.padding(16.dp))
-//
-//        // Login Button
-//        LoginButtonSection(
-//            loginEnable = loginEnable,
-//            isLoading = isLoading,
-//            onLoginSelected = {
-//                coroutineScope.launch {
-//                    viewModel.onLoginSelected()
-//                }
-//            }
-//        )
-
-        Spacer(modifier = Modifier.padding(16.dp))
-
-        // Guest Option
-        GuestOptionSection(
-            onGuestSelected = { viewModel.onGuestSelected() }
+@Composable
+fun GuestOptionSection(onGuestSelected: () -> Unit, onRegisterSelected: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "Continuar como Invitado",
+            modifier = Modifier
+                .clickable { onGuestSelected() }
+                .padding(8.dp),
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF011C21)
         )
 
-        Spacer(modifier = Modifier.padding(24.dp))
+        Spacer(modifier = Modifier.padding(8.dp))
 
-        // Footer
-        FooterSection()
+        Text(
+            text = buildAnnotatedString {
+                append("¿No tienes cuenta? ")
+                withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                    append("Regístrate")
+                }
+            },
+            modifier = Modifier.clickable { onRegisterSelected() },
+            fontSize = 12.sp,
+            color = Color(0xFF011C21)
+        )
     }
 }
 
@@ -134,14 +170,14 @@ fun HeaderSection() {
     ) {
         Image(
             painter = painterResource(R.drawable.icono),
-            contentDescription = "Andes State",
+            contentDescription = "AndeStay",
             modifier = Modifier.height(80.dp)
         )
 
         Spacer(modifier = Modifier.padding(8.dp))
 
         Text(
-            text = "Andes State",
+            text = "AndeStay",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF011C21)
@@ -176,8 +212,7 @@ fun LoginFormSection(
     password: String,
     onEmailChanged: (String) -> Unit,
     onPasswordChanged: (String) -> Unit,
-    showError: String?,
-    navController: NavController
+    showError: String?
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         // Email Field
@@ -202,8 +237,6 @@ fun LoginFormSection(
         )
         PasswordField(password, onPasswordChanged)
 
-
-
         // Error Message
         showError?.let { error ->
             Text(
@@ -214,11 +247,7 @@ fun LoginFormSection(
             )
         }
 
-        LoginButtonSection(email, password, navController )
-
         Spacer(modifier = Modifier.padding(8.dp))
-
-
 
         // Forgot Password
         ForgotPassword(Modifier.align(Alignment.End))
@@ -269,18 +298,8 @@ fun ForgotPassword(modifier: Modifier) {
 }
 
 @Composable
-fun LoginButton(
-    email: String,
-    password: String,
-    coroutineScope: CoroutineScope,
-    userLogic: UserLogic
-) {
-    Button(
-        onClick = {
-            coroutineScope.launch {
-                userLogic.getUser(email, password)
-            }
-        },
+fun LoginButton(loginEnable: Boolean, onLoginSelected: () -> Unit) {
+    Button(onClick = {onLoginSelected()},
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp),
@@ -289,74 +308,9 @@ fun LoginButton(
             disabledContainerColor = Color(0x94011C21),
             contentColor = Color.White,
             disabledContentColor = Color.White
-        )
+        ), enabled = loginEnable
     ){
         Text(text = "Iniciar Sesión")
-    }
-}
-
-@Composable
-fun LoginButtonSection(
-    email: String, password: String, navController: NavController
-) {
-//    if (isLoading) {
-//        Box(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .height(48.dp),
-//            contentAlignment = Alignment.Center
-//        ) {
-//            CircularProgressIndicator(color = Color.White)
-//        }
-//    } else {
-    val userLogic: UserLogic = viewModel()
-    val isValid by userLogic.validUser.collectAsState()
-    val coroutineScope = rememberCoroutineScope()
-
-    // Navigate when login is valid
-    LaunchedEffect(isValid) {
-        if (isValid == true) {
-            navController.navigate("home") {
-                popUpTo("login") { inclusive = true }
-            }
-            // Reset state after navigation to avoid multiple triggers
-            userLogic.resetValidUser()
-        }
-    }
-
-    LoginButton(email, password, coroutineScope, userLogic)
-//    }
-}
-
-@Composable
-fun GuestOptionSection(onGuestSelected: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = "Continuar como Invitado",
-            modifier = Modifier
-                .clickable { onGuestSelected() }
-                .padding(8.dp),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF011C21)
-        )
-
-        Spacer(modifier = Modifier.padding(8.dp))
-
-        Text(
-            text = buildAnnotatedString {
-                append("¿No tienes cuenta? ")
-                withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                    append("Regístrate")
-                }
-            },
-            modifier = Modifier.clickable { /* Navigate to register */ },
-            fontSize = 12.sp,
-            color = Color(0xFF011C21)
-        )
     }
 }
 

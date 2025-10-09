@@ -24,25 +24,18 @@ class UserLocation(application: Application) : AndroidViewModel(application) {
     private val _userLocation = MutableStateFlow<LatLng?>(null)
     val userLocation: StateFlow<LatLng?> = _userLocation
 
-
-    @SuppressLint("MissingPermission")
+    @RequiresPermission(anyOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     fun updateLocation(){
-      val locationRequest = LocationRequest.Builder(
-          Priority.PRIORITY_HIGH_ACCURACY,
-          5000L
-      ).build()
-        fusedLocation.requestLocationUpdates(
-            locationRequest,
-            object : LocationCallback(){
-                override fun onLocationResult(result: LocationResult) {
-                    result.lastLocation?.let { location ->
-                        _userLocation.value = LatLng(location.latitude, location.longitude)
+        try {
+            fusedLocation.lastLocation
+                .addOnSuccessListener { location ->
+                    location?.let {
+                        _userLocation.value = LatLng(it.latitude, it.longitude)
                     }
                 }
-            },
-            Looper.getMainLooper()
-
-        )
+        } catch (e: SecurityException){
+            println("it didn't find the user location $e")
+        }
 
     }
 

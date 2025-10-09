@@ -1,5 +1,3 @@
-
-
 plugins {
     // Android application plugin for building APKs
     // Plugin de aplicación Android para construir APKs
@@ -7,9 +5,11 @@ plugins {
     // Kotlin support for Android projects
     // Soporte de Kotlin para proyectos Android
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.compose.compiler)
+
+//    alias(libs.plugins.compose.compiler) apply false // 👈 Agrega esta línea
     // Enables Jetpack Compose support in Kotlin
-    // Habilita soporte para Jetpack Compose en Kotlin
-    alias(libs.plugins.kotlin.compose)
+
 }
 val mapsApiKey: String = project.findProperty("GOOGLE_MAPS_API_KEY") as? String ?: ""
 android {
@@ -96,16 +96,25 @@ android {
 }
 
 dependencies {
-implementation(libs.androidx.foundation.android)
+
     //    implementation(libs.androidx.compose.ui.graphics)
 //    implementation(libs.androidx.navigation.compose)
 //    implementation(libs.androidx.compose.foundation)
 //    implementation(libs.androidx.compose.ui.text)
 //    implementation(libs.androidx.compose.material3)
+    //Para hashear contraseñas de los usuarios
+//    implementation(libs.androidx.foundation.android)
+    implementation("org.mindrot:jbcrypt:0.4")
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.ui.text)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.play.services.drive)
     // Compose Bill of Materials for consistent Compose library versions
     // BOM (Bill of Materials) de Compose para versiones consistentes de librerías
 
-    val composeBom = platform("androidx.compose:compose-bom:2023.10.01")
+    val composeBom = platform("androidx.compose:compose-bom:2025.08.00")
     implementation(composeBom)
     testImplementation(composeBom)
     androidTestImplementation(composeBom)
@@ -119,6 +128,10 @@ implementation(libs.androidx.foundation.android)
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
     implementation("androidx.compose.runtime:runtime-livedata:1.5.4")
+    implementation(libs.androidx.foundation.layout.android)
+    implementation(libs.androidx.foundation.layout.android)
+    implementation(libs.androidx.foundation.layout.android)
+    implementation(libs.androidx.foundation.layout.android)
     implementation(libs.androidx.foundation.layout.android)
 
     implementation("androidx.lifecycle:lifecycle-runtime-ktx")

@@ -26,12 +26,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.hoteru.model.Hotel
 import com.example.hoteru.model.HotelUiState
+import com.example.hoteru.model.User
 import com.example.hoteru.model.RoomStats
 import com.example.hoteru.viewModel.HotelManagementViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HotelManagementScreen(navController: NavController) {
+fun HotelManagementScreen(navController: NavController, user:User?) {
     val viewModel: HotelManagementViewModel = viewModel()
     val hotelUiState by viewModel.hotelUiState.observeAsState(HotelUiState.Loading)
     val selectedHotel by viewModel.selectedHotel.observeAsState()
@@ -83,11 +84,13 @@ fun HotelManagementScreen(navController: NavController) {
                 FloatingActionButton(
                     onClick = {
                         Log.d("Pantalla de gestión de hoteles", "Creando nuevo hotel...")
-                        viewModel.createNewHotel()
+                        val adminId = user?.id ?: ""
+                        viewModel.createNewHotel(adminId)
                     },
                     containerColor = Color(0xFF011C21)
                 ) {
-                    Icon(Icons.Default.Add,
+                    Icon(
+                        Icons.Default.Add,
                         contentDescription = "Agregar Hotel",
                         tint = Color.White)
                 }
@@ -114,7 +117,9 @@ fun HotelManagementScreen(navController: NavController) {
                 is HotelUiState.Success -> {
                     if (state.hotels.isEmpty()) {
                         EmptyHotelsView(
-                            onAddHotel = { viewModel.createNewHotel() },
+                            onAddHotel = {
+                                val adminId = user?.id ?: ""
+                                viewModel.createNewHotel(adminId) },
                         )
                     } else {
                         HotelsListView(
@@ -139,7 +144,9 @@ fun HotelManagementScreen(navController: NavController) {
                 }
                 is HotelUiState.Empty -> {
                     EmptyHotelsView(
-                        onAddHotel = { viewModel.createNewHotel() },
+                        onAddHotel = {
+                            val adminId = user?.id ?: ""
+                            viewModel.createNewHotel(adminId) },
                     )
                 }
             }

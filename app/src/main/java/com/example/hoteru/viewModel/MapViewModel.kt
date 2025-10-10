@@ -8,14 +8,20 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.CameraPositionState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.bson.Document
 import org.bson.types.ObjectId
 
 class MapViewModel : ViewModel() {
 
     // --- ESTADOS PRINCIPALES CON MODELOS DE DATOS FUERTES ---
     // En lugar de List<Document>, usamos List<Hotel> para más seguridad y claridad.
+
+    private val _onedocument = MutableStateFlow<Document?>(null)
+
+    val onedocument: StateFlow<Document?> = _onedocument
     private val _hotels = MutableStateFlow<List<Hotel>>(emptyList())
     val hotels: StateFlow<List<Hotel>> = _hotels
 
@@ -98,6 +104,14 @@ class MapViewModel : ViewModel() {
                     _hotels.value = hotelList
                 }
         }
+    }
+    fun loadDetailsDocument(collection: String, id: String?){
+        viewModelScope.launch(Dispatchers.IO) {
+            val oneDocument = MongoDBConnection.oneDocument(collection, id)
+            _onedocument.value = oneDocument
+
+        }
+
     }
 
     /**

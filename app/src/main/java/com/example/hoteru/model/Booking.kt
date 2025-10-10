@@ -9,7 +9,7 @@ data class Booking(
     val _id: ObjectId = ObjectId(),
     val hotelId: ObjectId,
     val roomId: ObjectId,
-    val userId: String, // ID del usuario que reserva
+    val userId: String?, // ID del usuario que reserva
     val checkInDate: Date,
     val checkOutDate: Date,
     val guestName: String,

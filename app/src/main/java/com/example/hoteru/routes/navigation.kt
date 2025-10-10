@@ -24,6 +24,7 @@ import com.example.hoteru.view.DetailsHotelScreen
 
 import com.example.hoteru.view.MapScreen
 import com.example.hoteru.view.RegisterScreen
+import com.example.hoteru.view.UserBookingsScreen
 
 @Composable
 fun AppNavigation() {
@@ -84,6 +85,10 @@ fun AppNavigation() {
                 navController.popBackStack()
             }
         }
+        composable("user_bookings/{userId}") { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId")
+            UserBookingsScreen(userId = userId)
+        }
 
         composable("room_management") {
             RoomManagementScreen(navController = navController)
@@ -101,26 +106,32 @@ fun AppNavigation() {
             // authViewModel ya está definido al inicio de AppNavigation, así que lo reutilizamos.
             MapScreen(navController = navController, authViewModel = authViewModel)
         }
-        composable("detailshotel/{_id}/{name}") { backStackEntry ->
+        composable("detailshotel/{_id}/{name}/{idname}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("_id")
             val name = backStackEntry.arguments?.getString("name")
+            val user = backStackEntry.arguments?.getString("idname")
 
-            DetailsHotelScreen(navController, id, name)
+
+            DetailsHotelScreen(navController, id, name, user)
         }
-        composable("detailsroom/{_idroom}/{_idhotel}") { backStackEntry ->
+        composable("detailsroom/{_idroom}/{_idhotel}/{idname}") { backStackEntry ->
                 val idroom  = backStackEntry.arguments?.getString("_idroom")
-                val idhotel = backStackEntry.arguments?.getString("_idroom")
+                val idhotel = backStackEntry.arguments?.getString("_idhotel")
+                val user = backStackEntry.arguments?.getString("idname")
 
-                DetailsRoomScreen(navController, idroom, idhotel)
+                DetailsRoomScreen(navController, idroom, idhotel, user)
         }
-        composable("roomsbyprices/{minimun}/{maximun}") { backStackEntry ->
+        composable("roomsbyprices/{minimun}/{maximun}/{userid}") { backStackEntry ->
             val minimun = backStackEntry.arguments?.getString("minimun")
             val maximun = backStackEntry.arguments?.getString("maximun")
-            RoomsByPrice(navController, minimun, maximun)
+            val user = backStackEntry.arguments?.getString("userid")
+
+            RoomsByPrice(navController, minimun, maximun, user)
         }
         composable("hotelsbyrating/{rating}") { backStackEntry ->
             val rating = backStackEntry.arguments?.getString("rating")
             HotelsByRating(navController, rating)
             }
         }
+
     }

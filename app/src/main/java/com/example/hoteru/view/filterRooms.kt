@@ -30,7 +30,7 @@ import org.bson.types.ObjectId
 
 
 @Composable
-fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String?) {
+fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String?, user: String?) {
     val mapModel: MapViewModel = viewModel()
     val hotel by mapModel.onehotel.collectAsState()
     val rooms by mapModel.listOfRoomsUnderTheirPrice.collectAsState()
@@ -86,7 +86,7 @@ fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        onClick = { navController.navigate("detailsroom/$idroom/$idhotel") }
+                        onClick = { navController.navigate("detailsroom/$idroom/$idhotel/$user") }
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(

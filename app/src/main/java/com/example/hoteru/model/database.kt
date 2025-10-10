@@ -69,13 +69,6 @@ object MongoDBConnection {
         val collection = database.getCollection(collectionName)
         val id = ObjectId(idDocument)
         val document = collection.find(eq("_id", id)).firstOrNull()
-        println("respective hotel db $document")
-        println("respective hotel db $document")
-        println("respective hotel db $document")
-        println("respective hotel db $document")
-        println("respective hotel db $document")
-        println("respective hotel db $document")
-        println("respective hotel db $document")
         return document
     }
     fun getRooms(hotelId: String?): List<Document> {
@@ -212,8 +205,49 @@ object MongoDBConnection {
             null
         }
     }
+    suspend fun findUserById(userId: String?): User? = withContext(Dispatchers.IO) {
+        try {
+            val userCollection = database.getCollection("Users")
+            val userDocument = userCollection.find(Filters.eq("userId", userId)).first()
+                ?: return@withContext null // Si no se encuentra el usuario, devuelve nulo
 
-    // --- FUNCIONES REACTIVAS SIMPLIFICADAS CON FLOWS ---
+            Log.d(TAG, "Usuario encontrado con id: $userId")
+            documentToUser(userDocument)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error buscando usuario por id: ${e.message}", e)
+            null
+        }
+    }
+    suspend fun findBookingsByUserId(userId: String?): List<Booking> = withContext(Dispatchers.IO) {
+        if (userId.isNullOrBlank()) return@withContext emptyList() // no valid userId provided
+
+        try {
+            val bookingCollection = database.getCollection("Bookings")
+            val bookings = bookingCollection.find(Filters.eq("userId", userId))
+                .sort(Sorts.descending("createdAt")) // ✅ sort by newest booking first
+                .map { Booking.fromDocument(it) }
+                .toList()
+
+            if (bookings.isEmpty()) {
+                Log.d(TAG, "No se encontraron reservas para el usuario con id: $userId")
+            } else {
+                Log.d(
+                    TAG,
+                    "Se encontraron ${bookings.size} reservas para el usuario con id: $userId"
+                )
+            }
+
+            bookings
+        } catch (e: Exception) {
+            Log.e(TAG, "Error buscando reservas por id: ${e.message}", e)
+            emptyList()
+        }
+    }
+
+
+
+
+        // --- FUNCIONES REACTIVAS SIMPLIFICADAS CON FLOWS ---
 
     fun getHotels(): Flow<List<Hotel>> = flow {
         try {

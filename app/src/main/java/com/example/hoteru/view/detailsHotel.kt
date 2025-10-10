@@ -291,7 +291,7 @@ fun CommentsScreen(
 }
 
 @Composable
-fun DetailsHotelScreen(navController: NavController, hotelId: String?, name: String?) {
+fun DetailsHotelScreen(navController: NavController, hotelId: String?, name: String?, iduser: String?) {
     val viewHotel: MapViewModel = viewModel()
     val viewComment: logicComments = viewModel()
 
@@ -412,7 +412,7 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?, name: Str
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                onClick = { navController.navigate("detailsroom/$id/$hotelId") }
+                onClick = { navController.navigate("detailsroom/$id/$hotelId/$iduser") }
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(

@@ -85,6 +85,8 @@ import androidx.compose.ui.unit.sp
 
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.google.android.gms.maps.model.MapStyleOptions
+
 // --- FUNCIONES DE CONVERSIÓN ---
 
 @Composable
@@ -390,7 +392,7 @@ fun DropDownListMenu(
 }
 
 @Composable
-fun PriceFilter(navController: NavController) {
+fun PriceFilter(navController: NavController, user: String?) {
     var minimum by remember { mutableStateOf("") }
     var maximum by remember { mutableStateOf("") }
 
@@ -428,7 +430,7 @@ fun PriceFilter(navController: NavController) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Button(
-                    onClick = { navController.navigate("roomsbyprices/$minimum/$maximum") },
+                    onClick = { navController.navigate("roomsbyprices/$minimum/$maximum/$user") },
                     modifier = Modifier
                         .width(120.dp)
                         .height(36.dp),
@@ -530,19 +532,12 @@ fun BottomNavigationBar(navControllerHost: NavController, authState: AuthState) 
 
         // --- Item 2: Reservaciones ---
         NavigationBarItem(
-            selected = currentRoute == "reservations",
-            onClick = { navControllerHost.navigate("reservations") },
+            selected = currentRoute == "user_bookings/${authState.loginSuccess?.id ?: "idUsuario"}",
+            onClick = { navControllerHost.navigate("user_bookings/${authState.loginSuccess?.id ?: "idUsuario"}")},
             icon = { Icon(Icons.Default.Book, contentDescription = "Reservations") },
             label = { Text("Reservaciones") }
         )
 
-        // --- Item 3: Tu Hotel ---
-        NavigationBarItem(
-            selected = currentRoute == "your_hotel",
-            onClick = { navControllerHost.navigate("your_hotel") },
-            icon = { Icon(Icons.Default.Hotel, contentDescription = "Your Hotel") },
-            label = { Text("Tu Hotel") }
-        )
         // Esto asegura que el item se dibuje como parte de la barra.
         if (loggedInUser?.isAdmin == true) {
             NavigationBarItem(
@@ -591,6 +586,10 @@ fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewM
             MapUiSettings(mapToolbarEnabled = false)
         )
     }
+    val context = LocalContext.current
+    val mapStyleOptions = remember {
+        MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style)
+    }
 
     Scaffold(
         bottomBar = { BottomNavigationBar(navControllerHost = navController, authState = authState) }
@@ -613,7 +612,8 @@ fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewM
                     properties = MapProperties(
                         latLngBoundsForCameraTarget = tachiraBounds,
                         minZoomPreference = 8f,
-                        maxZoomPreference = 30f
+                        maxZoomPreference = 30f,
+                        mapStyleOptions = mapStyleOptions
                     ),
                     uiSettings = uiSettings
                 ) {
@@ -627,7 +627,7 @@ fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewM
                             state = markerState,
                             icon = bitmapDescriptorFromVector(LocalContext.current, R.drawable.h),
                             onInfoWindowClick = {
-                                navController.navigate("detailshotel/${hotel._id.toHexString()}/${authState.loginSuccess?.firstName ?: "Usuario"}")
+                                navController.navigate("detailshotel/${hotel._id.toHexString()}/${authState.loginSuccess?.firstName ?: "Usuario"}/${authState.loginSuccess?.id ?: "idUsuario"}")
                             }
                         ) { marker ->
                             Column(
@@ -641,27 +641,6 @@ fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewM
                             }
                         }
                     }
-
-//                    userLocation?.let { current ->
-//                        Marker(
-//                            state = rememberMarkerState(position = current),
-//                            icon = bitmapDescriptorFromVector(
-//                                context = LocalContext.current,
-//                                vectorResId = R.drawable.user,
-//                                tint = Color.Blue
-//                            ),
-//                            title = "Estás aquí"
-//                        )
-//
-//                        selectedHotel?.let { hotel ->
-//                            val destination = LatLng(hotel.location.coordinates[1], hotel.location.coordinates[0])
-//                            Polyline(
-//                                points = listOf(current, destination),
-//                                color = Color.Black,
-//                                width = 5f
-//                            )
-//                        }
-//                    }
                     userLocation?.let { current ->
                         selectedLocation?.let { dest ->
                             println("User Location: $current")
@@ -704,7 +683,7 @@ fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewM
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             if (visibilitySearchEngine) SearchEngine(cameraPositionState)
-                            if (visibilityPriceFilter) PriceFilter(navController)
+                            if (visibilityPriceFilter) PriceFilter(navController, authState.loginSuccess?.id)
                             if (visibilityRatingFilter) RatingFilter(navController)
                         }
                         IconButton(onClick = { CloseOrOpenDropDownListMenu(scope, drawerState) }) {

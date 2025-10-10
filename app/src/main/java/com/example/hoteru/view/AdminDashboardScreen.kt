@@ -102,19 +102,14 @@ fun AdminDashboardScreen(
                                         "Gestión de Hoteles" -> navController.navigate("hotel_management")
                                         "Gestión de Habitaciones" -> navController.navigate("room_management")
                                         "Reservas" -> {
-                                            when {
-                                                hotels.size == 1 -> {
+                                            if(hotels.size == 1){
                                                     val singleHotelId =
                                                         hotels.first()._id.toHexString()
                                                     navController.navigate("booking_management/$singleHotelId")
-                                                }
-
-                                                else -> {
+                                                }else {
                                                     navController.navigate("hotel_management")
                                                 }
                                             }
-                                        }
-
                                         "Clientes" -> navController.navigate("customers")
                                     }
                                 }
@@ -126,6 +121,7 @@ fun AdminDashboardScreen(
         }
     }
 }
+
 @Composable
 fun QuickStatsRow(stats: DashboardStats) {
     Row(

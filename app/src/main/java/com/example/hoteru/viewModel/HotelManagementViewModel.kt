@@ -6,7 +6,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hoteru.model.*
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import org.bson.Document
 import org.bson.types.ObjectId
@@ -59,6 +59,21 @@ class HotelManagementViewModel : ViewModel() {
             }
         }
     }
+    // Carga los datos de un único hotel por su ID y los publica en _selectedHotel.
+    fun loadHotelById(hotelId: ObjectId) {
+        viewModelScope.launch {
+            try {
+                // Usamos la función de Flow que ya existe para obtener los datos.
+                // firstOrNull() toma solo el primer valor emitido por el Flow.
+                val hotelData = MongoDBConnection.getHotelWithRoomStats(hotelId).firstOrNull()
+                _selectedHotel.value = hotelData?.first
+            } catch (e: Exception) {
+                Log.e(TAG, "Error cargando el hotel por ID: $hotelId", e)
+                _toastMessage.value = "Error al cargar los datos del hotel."
+            }
+        }
+    }
+
 
     // Fallback en caso de error con el stream reactivo
     private fun loadHotelsFallback() {
@@ -145,62 +160,19 @@ class HotelManagementViewModel : ViewModel() {
         }
     }
 
+    // Esta función local puede ser eliminada si la de MongoDBConnection ya es suficiente.
     private fun documentToHotel(document: Document): Hotel {
-        return try {
-            Hotel(
-                _id = document.getObjectId("_id"),
-                name = document.getString("name") ?: "",
-                address = document.getString("address") ?: "",
-                city = document.getString("city") ?: "",
-                state = document.getString("state") ?: "Táchira",
-                location = getLocationFromDocument(document),
-                description = document.getString("description") ?: "",
-                amenities = document.getList("amenities", String::class.java) ?: emptyList(),
-                contactEmail = document.getString("contactEmail") ?: "",
-                contactPhone = document.getString("contactPhone") ?: "",
-                images = document.getList("images", String::class.java) ?: emptyList(),
-                isActive = document.getBoolean("isActive") ?: true,
-                roomCount = document.getInteger("roomCount") ?: 0,
-                availableRooms = document.getInteger("availableRooms")
-                    ?: document.getInteger("roomCount") ?: 0
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "Error convirtiendo documento a hotel: ${e.message}")
-            Hotel(
-                name = "Error cargando hotel",
-                description = "No se pudieron cargar los datos del hotel"
-            )
-        }
+        // ... (esta función ya no es necesaria aquí si MongoDBConnection la tiene)
+        return Hotel(name = "Deprecated")
     }
 
+    // Esta función local puede ser eliminada.
     private fun getLocationFromDocument(document: Document): Location {
-        return try {
-            val locationDoc = document.get("location") as? Document
-
-            if (locationDoc != null) {
-                val rawCoordinates = locationDoc.getList("coordinates", Number::class.java)
-
-                if (rawCoordinates != null && rawCoordinates.size >= 2) {
-                    val coordinates = rawCoordinates.map { it.toDouble() }
-
-                    Location(
-                        type = locationDoc.getString("type") ?: "Point",
-                        coordinates = coordinates
-                    )
-                } else {
-                    Log.w(TAG, "Coordenadas no encontradas o incompletas en el documento.")
-                    Location()
-                }
-            } else {
-                Log.w(TAG, "Campo 'location' no encontrado en el documento.")
-                Location()
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "💥 Error crítico analizando location: ${e.message}", e)
-            Location()
-        }
+        // ... (esta función ya no es necesaria aquí si MongoDBConnection la tiene)
+        return Location()
     }
 
+    // <<< 2. FUNCIÓN ACTUALIZADA >>>
     private fun hotelToDocument(hotel: Hotel): Document {
         // Obtener estadísticas actuales si están disponibles
         val currentStats = getCurrentRoomStats(hotel._id)
@@ -225,6 +197,9 @@ class HotelManagementViewModel : ViewModel() {
             put("availableRooms", finalAvailableRooms)
             put("adminId", hotel.adminId)
             put("createdAt", hotel.createdAt)
+            // <<< Añadir los nuevos campos para que se guarden en la base de datos >>>
+            put("checkInTime", hotel.checkInTime)
+            put("checkOutTime", hotel.checkOutTime)
         }
     }
 
@@ -237,7 +212,7 @@ class HotelManagementViewModel : ViewModel() {
         // Creamos un hotel nuevo, vacío pero estructuralmente completo.
         val newEmptyHotel = Hotel(
             _id = ObjectId(),           // Generamos un nuevo ID para este hotel
-            adminId = adminId,          // <-- ¡¡LA CLAVE DE TODO!! Asignamos el ID del admin
+            adminId = adminId,          // Asignamos el ID del admin
             name = "",
             address = "",
             city = "",
@@ -250,7 +225,8 @@ class HotelManagementViewModel : ViewModel() {
             amenities = emptyList(),
             images = emptyList(),
             isActive = true,
-            createdAt = System.currentTimeMillis() // Opcional: registrar cuándo se empezó a crear
+            createdAt = System.currentTimeMillis()
+            // Los nuevos campos checkInTime y checkOutTime tomarán sus valores por defecto "15:00" y "12:00"
         )
         _selectedHotel.value = newEmptyHotel // Lo ponemos como el hotel seleccionado
         _isEditing.value = true              // Activamos el modo edición para que se abra el formulario
@@ -268,7 +244,8 @@ class HotelManagementViewModel : ViewModel() {
                 var success: Boolean
 
                 val originalHotel = _selectedHotel.value
-                val isUpdate = originalHotel != null && originalHotel.name.isNotBlank()
+                // Se considera actualización si el hotel ya existe en la lista que cargamos
+                val isUpdate = _hotelsWithStats.value?.any { it.first._id == hotel._id } ?: false
 
                 if (isUpdate) {
                     Log.d(TAG, "🔄 Actualizando hotel con ID: ${hotel._id}")
@@ -284,7 +261,7 @@ class HotelManagementViewModel : ViewModel() {
                     _toastMessage.value = message
 
                     cancelEdit()
-                    loadHotelsWithStats() // Usar la función reactiva
+                    loadHotelsWithStats() // Recarga toda la lista
                 } else {
                     val message = if (isUpdate) "❌ Error al actualizar" else "❌ Error al crear"
                     Log.e(TAG, message)
@@ -304,7 +281,6 @@ class HotelManagementViewModel : ViewModel() {
                 // Paso 1: Eliminar todas las habitaciones del hotel.
                 val roomsDeleted = MongoDBConnection.deleteRoomsByHotelId(hotel._id)
                 if (!roomsDeleted) {
-                    // Opcional: podrías mostrar un error más específico, pero por ahora continuamos.
                     Log.w(TAG, "Hubo un problema eliminando las habitaciones del hotel ${hotel._id}")
                 }
 

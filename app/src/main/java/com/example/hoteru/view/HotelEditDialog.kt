@@ -45,6 +45,7 @@ import androidx.compose.ui.window.Dialog
 import com.example.hoteru.model.Hotel
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import java.util.regex.Pattern
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,11 +59,21 @@ fun HotelEditDialog(
 
 ) {
     var currentHotel by remember { mutableStateOf(hotel) }
+    //Valida que un formato de 24h
+    val timePattern = remember { Pattern.compile("^([01]\\d|2[0-3]):([0-5]\\d)$") }
+    val isCheckInTimeValid = remember(currentHotel.checkInTime) {
+        timePattern.matcher(currentHotel.checkInTime).matches()
+    }
+    val isCheckOutTimeValid = remember(currentHotel.checkOutTime) {
+        timePattern.matcher(currentHotel.checkOutTime).matches()
+    }
+
     // Calcular si el formulario es válido
     val isFormValid = currentHotel.name.isNotBlank() &&
             currentHotel.address.isNotBlank() &&
             currentHotel.city.isNotBlank() &&
-            currentHotel.roomCount > 0
+            currentHotel.roomCount > 0 &&
+            isCheckInTimeValid && isCheckOutTimeValid
             /*
             currentHotel.location.latitude != 0.0 &&
             currentHotel.location.longitude != 0.0
@@ -108,7 +119,10 @@ fun HotelEditDialog(
                 if (isEditing) {
                     HotelEditForm(
                         hotel = currentHotel,
-                        onHotelChange = { updatedHotel -> currentHotel = updatedHotel }
+                        onHotelChange = { updatedHotel -> currentHotel = updatedHotel },
+                        isCheckInTimeValid = isCheckInTimeValid,
+                        isCheckOutTimeValid = isCheckOutTimeValid
+
                     )
                 } else {
                     HotelDetailView(hotel = currentHotel)
@@ -160,7 +174,9 @@ fun HotelEditDialog(
 @Composable
 fun HotelEditForm(
     hotel: Hotel,
-    onHotelChange: (Hotel) -> Unit
+    onHotelChange: (Hotel) -> Unit,
+    isCheckInTimeValid: Boolean,
+    isCheckOutTimeValid: Boolean
 ) {
     Column(
         modifier = Modifier
@@ -298,7 +314,7 @@ fun HotelEditForm(
                 value = hotel.availableRooms.toString(),
                 onValueChange = { newValue ->
                     val available = newValue.toIntOrNull() ?: 0
-                    // No permite más available que el total
+                    // No permite más disponible que el total
                     val finalAvailable = minOf(available, hotel.roomCount)
                     onHotelChange(hotel.copy(availableRooms = finalAvailable))
                 },
@@ -307,6 +323,42 @@ fun HotelEditForm(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 isError = hotel.availableRooms < 0 || hotel.availableRooms > hotel.roomCount
+            )
+        }
+        // --- Políticas de Horario en Fila ---
+        Text(
+            "Políticas de Horario",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF718283),
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = hotel.checkInTime,
+                onValueChange = { onHotelChange(hotel.copy(checkInTime = it)) },
+                label = { Text("Hora Check-In") },
+                placeholder = { Text("HH:mm") },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                isError = !isCheckInTimeValid
+            )
+            OutlinedTextField(
+                value = hotel.checkOutTime,
+                onValueChange = { onHotelChange(hotel.copy(checkOutTime = it)) },
+                label = { Text("Hora Check-Out") },
+                placeholder = { Text("HH:mm") },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                isError = !isCheckOutTimeValid
+            )
+        }
+        if (!isCheckInTimeValid || !isCheckOutTimeValid) {
+            Text(
+                "El formato debe ser HH:mm (ej: 15:00)",
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(start = 16.dp)
             )
         }
 
@@ -352,6 +404,8 @@ fun HotelDetailView(hotel: Hotel) {
         DetailItem("Email", hotel.contactEmail)
         DetailItem("Teléfono", hotel.contactPhone)
         DetailItem("Habitaciones", "${hotel.availableRooms}/${hotel.roomCount} disponibles")
+        DetailItem("Hora de Check-In", hotel.checkInTime)
+        DetailItem("Hora de Check-Out", hotel.checkOutTime)
         DetailItem("Estado", if (hotel.isActive) "Activo" else "Inactivo")
 
         if (hotel.amenities.isNotEmpty()) {

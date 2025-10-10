@@ -215,7 +215,8 @@ fun Base64Image(
 @Composable
 fun CommentsScreen(
     hotelId: String?,
-    commentViewModel: logicComments = viewModel()
+    commentViewModel: logicComments = viewModel(),
+    name: String?
 ) {
     var commentText by remember  { mutableStateOf("") }
 
@@ -261,6 +262,7 @@ fun CommentsScreen(
                 val newComment = Comment(
                     hotelId = hotelId,
                     commentText = commentText,
+                    userName = name,
                     timestamp = Date()
                 )
                 commentViewModel.insertComment(newComment)
@@ -289,7 +291,7 @@ fun CommentsScreen(
 }
 
 @Composable
-fun DetailsHotelScreen(navController: NavController, hotelId: String?) {
+fun DetailsHotelScreen(navController: NavController, hotelId: String?, name: String?) {
     val viewHotel: MapViewModel = viewModel()
     val viewComment: logicComments = viewModel()
 
@@ -450,7 +452,7 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?) {
             }
         }
         item {
-            CommentsScreen(hotelId,viewComment)
+            CommentsScreen(hotelId,viewComment, name)
         }
         items(comments) { comment ->
             Card(
@@ -468,6 +470,14 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?) {
                         style = MaterialTheme.typography.bodySmall,    // smaller for timestamp
                         color = Color.Gray
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    comment.userName?.let {
+                        Text(
+                            text = it, // Convert Date to String
+                            style = MaterialTheme.typography.bodySmall,    // smaller for timestamp
+                            color = Color.Gray
+                        )
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = comment.commentText,

@@ -63,6 +63,15 @@ class MapViewModel : ViewModel() {
     private val _visibilityPriceFilter = MutableStateFlow(false)
     val visibilityPriceFilter: StateFlow<Boolean> = _visibilityPriceFilter
 
+    private val _selectedLocation = MutableStateFlow<LatLng?>(null)
+
+    // Public immutable state that the Composable observes
+    val selectedLocation: StateFlow<LatLng?> = _selectedLocation
+
+    fun updateSelectedLocation(location: LatLng?) {
+        _selectedLocation.value = location
+    }
+
     private val _visibilityRatingFilter = MutableStateFlow(false)
     val visibilityRatingFilter: StateFlow<Boolean> = _visibilityRatingFilter
 

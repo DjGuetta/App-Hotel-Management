@@ -1,13 +1,31 @@
 package com.example.hoteru.model
 
-import org.bson.types.ObjectId
-import java.text.SimpleDateFormat
+import org.bson.Document
 import java.util.Date
 
+
 data class Comment(
-    val _id: ObjectId = ObjectId(),          // MongoDB unique ID
-    val hotelId: String?,                   // Reference to the hotel document
-//    val userName: String,                    // User who wrote the comment
-    val commentText: String,                 // The comment text
-    val timestamp: Date = Date()  // Time when comment was created
+    val hotelId: String?,
+    val userName: String?,
+    val commentText: String,
+    val timestamp: Date
 )
+
+// ✅ Function to convert Comment → Document
+fun Comment.toDocument(): Document {
+    return Document()
+        .append("hotelId", hotelId)
+        .append("userName", userName)
+        .append("commentText", commentText)
+        .append("timestamp", timestamp)
+}
+
+// ✅ Function to convert Document → Comment
+fun Document.toComment(): Comment {
+    return Comment(
+        hotelId = this.getString("hotelId"),
+        userName = this.getString("userName"),
+        commentText = this.getString("commentText"),
+        timestamp = this.getDate("timestamp")
+    )
+}

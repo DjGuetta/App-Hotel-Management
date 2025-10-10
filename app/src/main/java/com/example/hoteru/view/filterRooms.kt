@@ -86,7 +86,7 @@ fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        onClick = { navController.navigate("detailsroom/$idroom") }
+                        onClick = { navController.navigate("detailsroom/$idroom/$idhotel") }
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(

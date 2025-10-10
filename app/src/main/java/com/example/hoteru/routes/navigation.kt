@@ -101,9 +101,11 @@ fun AppNavigation() {
             // authViewModel ya está definido al inicio de AppNavigation, así que lo reutilizamos.
             MapScreen(navController = navController, authViewModel = authViewModel)
         }
-        composable("detailshotel/{_id}") { backStackEntry ->
+        composable("detailshotel/{_id}/{name}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("_id")
-            DetailsHotelScreen(navController, id)
+            val name = backStackEntry.arguments?.getString("name")
+
+            DetailsHotelScreen(navController, id, name)
         }
         composable("detailsroom/{_idroom}/{_idhotel}") { backStackEntry ->
                 val idroom  = backStackEntry.arguments?.getString("_idroom")

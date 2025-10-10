@@ -21,9 +21,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 import org.mindrot.jbcrypt.BCrypt
 import java.util.Calendar
 
@@ -46,7 +44,7 @@ import java.util.Calendar
 object MongoDBConnection {
 
 //    private const val CONNECTION_DATABASE = "mongodb://172.18.26.188:27017"
-    private const val CONNECTION_DATABASE = "mongodb://192.168.0.249:27017"
+    private const val CONNECTION_DATABASE = "mongodb://192.168.1.3:27017"
 
     private const val DATABASE_NAME = "Hoteru"
 
@@ -111,38 +109,35 @@ object MongoDBConnection {
     }
     fun insertCommentDb(comment: Comment): Boolean {
         val commentsCollection: MongoCollection<Document> = database.getCollection("Comments")
-        try {
-            // Optional: check if the exact same comment already exists (e.g., same user + text + hotel)
-
-
+        return try {
             // Convert Comment object to Document
             val doc = Document(mapOf(
                 "hotelId" to comment.hotelId,
-                "timestamp" to comment.timestamp,
-
-//                "username" to comment.userName,
+                "userName" to (comment.userName ?: "Anónimo"),
                 "commentText" to comment.commentText,
+                "timestamp" to comment.timestamp
             ))
 
             // Insert into collection
             commentsCollection.insertOne(doc)
-            println("Comment inserted successfully for hotelId: ${comment.hotelId}")
-            return true
-
+            println("✅ Comment inserted successfully for hotelId: ${comment.hotelId}")
+            true
         } catch (e: Exception) {
             e.printStackTrace()
-            return false
+            false
         }
     }
+
     fun getComments(hotelId: String?): List<Comment> {
-        val collection = database.getCollection("Comments")
-        return collection.find(eq("hotelId", hotelId))  // filter by hotelId
+        val collection: MongoCollection<Document> = database.getCollection("Comments")
+        return collection.find(eq("hotelId", hotelId))
             .sort(Sorts.descending("timestamp"))
             .map { doc ->
                 Comment(
                     hotelId = doc.getString("hotelId"),
+                    userName = doc.getString("userName") ?: "Unknown",
                     commentText = doc.getString("commentText"),
-                    timestamp = doc.getDate("timestamp") ?: Date()  // assuming you store it as a Date
+                    timestamp = doc.getDate("timestamp") ?: Date()
                 )
             }.toList()
     }

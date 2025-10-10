@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 class UserLocation(application: Application) : AndroidViewModel(application) {
     private val fusedLocation = LocationServices.getFusedLocationProviderClient(application) // is the API from Google Play Services to get the device’s location.
-//    fusedLocationClient is Google’s Fused Location Provider → a smart API that combines GPS, Wi-Fi, and cell towers to get your location.
+    //    fusedLocationClient is Google’s Fused Location Provider → a smart API that combines GPS, Wi-Fi, and cell towers to get your location.
     private val _userLocation = MutableStateFlow<LatLng?>(null)
     val userLocation: StateFlow<LatLng?> = _userLocation
 
@@ -31,6 +31,14 @@ class UserLocation(application: Application) : AndroidViewModel(application) {
                 .addOnSuccessListener { location ->
                     location?.let {
                         _userLocation.value = LatLng(it.latitude, it.longitude)
+                        println("location logic $it.latitude, $it.longitude")
+                        println("location logic $it.latitude, $it.longitude")
+                        println("location logic $it.latitude, $it.longitude")
+                        println("location logic $it.latitude, $it.longitude")
+                        println("location logic $it.latitude, $it.longitude")
+                        println("location logic $it.latitude, $it.longitude")
+                        println("location logic $it.latitude, $it.longitude")
+
                     }
                 }
         } catch (e: SecurityException){
@@ -48,5 +56,5 @@ class UserLocation(application: Application) : AndroidViewModel(application) {
         )
         return distance[0]
 
-    }
+       }
 }

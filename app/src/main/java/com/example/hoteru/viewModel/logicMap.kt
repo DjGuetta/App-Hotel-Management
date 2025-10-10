@@ -84,23 +84,19 @@ class MapViewModel : ViewModel() {
     // Public immutable state that the Composable observes
     val selectedLocation: StateFlow<LatLng?> = _selectedLocation
     private val _visibilityWindow = MutableStateFlow(false)
-
-    // Public immutable state that the Composable observes
-    val visibilityWindow: StateFlow<Boolean?> = _visibilityWindow
+    val visibilityWindow: StateFlow<Boolean> = _visibilityWindow
 
     private val _visibilityButton = MutableStateFlow(false)
-
-    val visibilityButton: StateFlow<Boolean?> = _visibilityButton
+    val visibilityButton: StateFlow<Boolean> = _visibilityButton
 
     private val _visibilitySearchEngine = MutableStateFlow(true)
-    val visibilitySearchEngine: StateFlow<Boolean?> = _visibilitySearchEngine
-
+    val visibilitySearchEngine: StateFlow<Boolean> = _visibilitySearchEngine
 
     private val _visibilityPriceFilter = MutableStateFlow(false)
-    val visibilityPriceFilter: StateFlow<Boolean?> = _visibilityPriceFilter
+    val visibilityPriceFilter: StateFlow<Boolean> = _visibilityPriceFilter
 
     private val _visibilityRatingFilter = MutableStateFlow(false)
-    val visibilityRatingFilter: StateFlow<Boolean?> = _visibilityRatingFilter
+    val visibilityRatingFilter: StateFlow<Boolean> = _visibilityRatingFilter
 
 
     private val _isSearching = MutableStateFlow(false)

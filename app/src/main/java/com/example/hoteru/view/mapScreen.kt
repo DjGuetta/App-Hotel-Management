@@ -214,28 +214,74 @@ fun SearchEngine(cameraPositionState: CameraPositionState) {
     }
 }
 
+//@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
+//@Composable
+//fun DropdownListHotel(navController: NavController, DropDownItems: List<Hotel>, mapModel: MapViewModel) {
+//    var isExpanded by remember { mutableStateOf(false) }
+//    var selectedText by rememberSaveable { mutableStateOf(DropDownItems.firstOrNull()?.name ?: "") }
+//    val locationPermissionState = rememberPermissionState(
+//        Manifest.permission.ACCESS_FINE_LOCATION
+//    )
+//
+//    ExposedDropdownMenuBox(
+//        expanded = isExpanded,
+//        onExpandedChange = { isExpanded = !isExpanded }
+//    ) {
+//        OutlinedTextField(
+//            value = selectedText,
+//            onValueChange = {},
+//            readOnly = true,
+//            label = { Text("Selecciona un hotel") },
+//            trailingIcon = {
+//                ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded)
+//            },
+//            modifier = Modifier.menuAnchor()
+//        )
+//        ExposedDropdownMenu(
+//            expanded = isExpanded,
+//            onDismissRequest = { isExpanded = false }
+//        ) {
+//            DropDownItems.forEach { hotel ->
+//                DropdownMenuItem(
+//                    text = { Text(hotel.name) },
+//                    onClick = {
+//                        if (locationPermissionState.status.isGranted) {
+//                            selectedText = hotel.name
+//                            mapModel.setVisibilityWindow(false)
+//                        } else {
+//                            locationPermissionState.launchPermissionRequest()
+//                        }
+//                    },
+//                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+//                )
+//            }
+//        }
+//    }
+//}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
-fun DropdownListHotel(navController: NavController, DropDownItems: List<Hotel>, mapModel: MapViewModel) {
+fun DropdownListHotel(navController: NavController, DropDownItems: List<Hotel>, mapModel: MapViewModel){
+
     var isExpanded by remember { mutableStateOf(false) }
     var selectedText by rememberSaveable { mutableStateOf(DropDownItems.firstOrNull()?.name ?: "") }
     val locationPermissionState = rememberPermissionState(
         Manifest.permission.ACCESS_FINE_LOCATION
     )
-
     ExposedDropdownMenuBox(
         expanded = isExpanded,
-        onExpandedChange = { isExpanded = !isExpanded }
-    ) {
+        onExpandedChange = {isExpanded = !isExpanded}
+    ){
         OutlinedTextField(
             value = selectedText,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Selecciona un hotel") },
+            label = { Text("Select hotel") },
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded)
             },
-            modifier = Modifier.menuAnchor()
+            modifier = Modifier
+                .menuAnchor()   // ✅ REQUIRED
         )
         ExposedDropdownMenu(
             expanded = isExpanded,
@@ -243,21 +289,36 @@ fun DropdownListHotel(navController: NavController, DropDownItems: List<Hotel>, 
         ) {
             DropDownItems.forEach { hotel ->
                 DropdownMenuItem(
-                    text = { Text(hotel.name) },
+                    text = {Text( hotel.name)},
                     onClick = {
-                        if (locationPermissionState.status.isGranted) {
-                            selectedText = hotel.name
-                            mapModel.setVisibilityWindow(false)
-                        } else {
+                        if (locationPermissionState.status.isGranted){
+                            val location = hotel.location
+                            val coordinatesAny = location.coordinates as? List<*>
+                            val lat = coordinatesAny?.getOrNull(1)?.toString()?.toDoubleOrNull() ?: 0.0
+                            val lon = coordinatesAny?.getOrNull(0)?.toString()?.toDoubleOrNull() ?: 0.0
+                            if (lat != null && lon != null) {
+                                // ✅ Instead of calling DrawWay directly, update state
+//                            selectedLocation = LatLng(lat, lon)
+                                selectedText = hotel.name
+                                mapModel.updateSelectedLocation(LatLng(lat, lon)) // ✅ updates ViewModel state
+                                mapModel.setVisibilityWindow(false)
+//
+                            }} else {
+                            // 🚨 Ask for permission
                             locationPermissionState.launchPermissionRequest()
                         }
+
                     },
                     contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                 )
+
             }
         }
+
     }
 }
+
+
 
 fun CloseOrOpenDropDownListMenu(scope: CoroutineScope, drawerState: DrawerState) {
     scope.launch {
@@ -502,7 +563,7 @@ fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewM
     val userModel: UserLocation = viewModel()
 
     val hotels by mapModel.hotels.collectAsState()
-    val selectedHotel by mapModel.selectedHotel.collectAsState()
+    val selectedLocation by mapModel.selectedLocation.collectAsState()
     val userLocation by userModel.userLocation.collectAsState()
     val visibilityWindow by mapModel.visibilityWindow.collectAsState()
     val visibilitySearchEngine by mapModel.visibilitySearchEngine.collectAsState()
@@ -552,7 +613,7 @@ fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewM
                     properties = MapProperties(
                         latLngBoundsForCameraTarget = tachiraBounds,
                         minZoomPreference = 8f,
-                        maxZoomPreference = 12f
+                        maxZoomPreference = 30f
                     ),
                     uiSettings = uiSettings
                 ) {
@@ -566,7 +627,7 @@ fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewM
                             state = markerState,
                             icon = bitmapDescriptorFromVector(LocalContext.current, R.drawable.h),
                             onInfoWindowClick = {
-                                navController.navigate("detailshotel/${hotel._id.toHexString()}")
+                                navController.navigate("detailshotel/${hotel._id.toHexString()}/${authState.loginSuccess?.firstName ?: "Usuario"}")
                             }
                         ) { marker ->
                             Column(
@@ -581,26 +642,50 @@ fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewM
                         }
                     }
 
+//                    userLocation?.let { current ->
+//                        Marker(
+//                            state = rememberMarkerState(position = current),
+//                            icon = bitmapDescriptorFromVector(
+//                                context = LocalContext.current,
+//                                vectorResId = R.drawable.user,
+//                                tint = Color.Blue
+//                            ),
+//                            title = "Estás aquí"
+//                        )
+//
+//                        selectedHotel?.let { hotel ->
+//                            val destination = LatLng(hotel.location.coordinates[1], hotel.location.coordinates[0])
+//                            Polyline(
+//                                points = listOf(current, destination),
+//                                color = Color.Black,
+//                                width = 5f
+//                            )
+//                        }
+//                    }
                     userLocation?.let { current ->
-                        Marker(
-                            state = rememberMarkerState(position = current),
-                            icon = bitmapDescriptorFromVector(
-                                context = LocalContext.current,
-                                vectorResId = R.drawable.user,
-                                tint = Color.Blue
-                            ),
-                            title = "Estás aquí"
-                        )
-
-                        selectedHotel?.let { hotel ->
-                            val destination = LatLng(hotel.location.coordinates[1], hotel.location.coordinates[0])
-                            Polyline(
-                                points = listOf(current, destination),
-                                color = Color.Black,
-                                width = 5f
+                        selectedLocation?.let { dest ->
+                            println("User Location: $current")
+                            println("Destination: $dest")
+                            mapModel.setVisibilityButton(true)
+                            Marker(
+                                state = rememberMarkerState(position = current),
+                                icon = bitmapDescriptorFromVector(
+                                    LocalContext.current,
+                                    R.drawable.user
+                                ),
+                                title = "Estas aqui",
                             )
+
+                            // Polyline from user to selected hotel
+                            Polyline(
+                                points = listOf(current, dest),
+                                color = Color.Black
+                            )
+
+
                         }
                     }
+
                 }
 
                 Column(
@@ -647,7 +732,7 @@ fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewM
                                 .align(Alignment.Center)
                                 .background(Color.White, shape = RoundedCornerShape(16.dp))
                                 .padding(16.dp)
-                                .shadow(8.dp, shape = RoundedCornerShape(16.dp))
+
                         ) {
                             IconButton(
                                 onClick = { mapModel.setVisibilityWindow(false) },
@@ -659,9 +744,9 @@ fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewM
                         }
                     }
 
-                    if (userLocation != null && selectedHotel != null) {
+                    if (userLocation != null && selectedLocation != null) {
                         IconButton(
-                            onClick = { /* Lógica para deseleccionar el hotel */ },
+                            onClick = { mapModel.updateSelectedLocation(null) },
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
                                 .padding(16.dp)

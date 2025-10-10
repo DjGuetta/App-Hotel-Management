@@ -184,6 +184,7 @@ fun BookingFormNormalUser(
                         checkOutDate = formatter.parse(checkOutDate) ?: Date(),
                         guestName = guestName,
                         guestEmail = guestEmail,
+                        guestPhone = "",
                         totalCost = room?.getInteger("pricePerNight")?.toDouble() ?: 0.0
                     )
                     bookingLogic.makeBooking(booking)

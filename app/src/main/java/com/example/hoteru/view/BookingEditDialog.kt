@@ -1,5 +1,6 @@
 package com.example.hoteru.view
 
+import androidx.compose.animation.core.copy
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -39,6 +40,7 @@ fun BookingEditDialog(
     // --- Estados del formulario ---
     var guestName by remember { mutableStateOf(bookingToEdit?.guestName ?: "") }
     var guestEmail by remember { mutableStateOf(bookingToEdit?.guestEmail ?: "") }
+    var guestPhone by remember { mutableStateOf(bookingToEdit?.guestPhone ?: "") }
 
     // --- Estados para menús y fechas ---
     val hotels by viewModel.hotels.collectAsState()
@@ -136,6 +138,13 @@ fun BookingEditDialog(
                     label = { Text("Email del Huésped") },
                     modifier = Modifier.fillMaxWidth()
                 )
+                OutlinedTextField(
+                    value = guestPhone,
+                    onValueChange = { guestPhone = it },
+                    label = { Text("Teléfono del Huésped") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    modifier = Modifier.fillMaxWidth()
+                )
 
                 // --- Sección de Fechas ---
                 Spacer(modifier = Modifier.height(8.dp))
@@ -188,6 +197,7 @@ fun BookingEditDialog(
                                     userId = bookingToEdit?.userId ?: currentAdminId,
                                     guestName = guestName,
                                     guestEmail = guestEmail,
+                                    guestPhone = guestPhone,
                                     totalCost = totalCost,
                                     checkInDate = checkInDate!!,
                                     checkOutDate = checkOutDate!!,

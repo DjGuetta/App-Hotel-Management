@@ -681,6 +681,7 @@ object MongoDBConnection {
                 val updates = Document("\$set", Document()
                     .append("guestName", booking.guestName)
                     .append("guestEmail", booking.guestEmail)
+                    .append("guestPhone", booking.guestPhone)
                     .append("checkInDate", booking.checkInDate)
                     .append("checkOutDate", booking.checkOutDate)
                     .append("totalCost", booking.totalCost)

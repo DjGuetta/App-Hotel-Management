@@ -8,6 +8,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -17,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -157,6 +160,7 @@ fun HotelManagementScreen(navController: NavController, user:User?) {
                 HotelEditDialog(
                     hotel = hotel,
                     isEditing = isEditing,
+                    viewModel = viewModel,
                     onSave = { updatedHotel ->
                         Log.d("Pantalla de gestión de hoteles", "Guardando hotel: ${updatedHotel.name}")
                         viewModel.saveHotel(updatedHotel)
@@ -242,6 +246,9 @@ fun HotelCard(
                 fontSize = 14.sp,
                 color = Color.Gray
             )
+            Spacer(modifier = Modifier.height(8.dp))
+            RatingDisplay(rating = hotel.rating)
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "$availableRooms/$totalRooms habitaciones disponibles",
                 fontSize = 12.sp,
@@ -328,6 +335,36 @@ fun ErrorView(message: String, onRetry: () -> Unit, modifier: Modifier = Modifie
             Button(onClick = onRetry) {
                 Text("Reintentar")
             }
+        }
+    }
+}
+@Composable
+fun RatingDisplay(
+    modifier: Modifier = Modifier,
+    rating: Int,
+    maxRating: Int = 5,starColor: Color = Color(0xFFFFC107) // Un color dorado para las estrellas
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Dibuja las estrellas llenas
+        for (i in 1..rating) {
+            Icon(
+                imageVector = Icons.Filled.Star,
+                contentDescription = "Estrella llena",
+                tint = starColor,
+                modifier = Modifier.size(20.dp) // Tamaño de la estrella
+            )
+        }
+        // Dibuja las estrellas vacías
+        for (i in (rating + 1)..maxRating) {
+            Icon(
+                imageVector = Icons.Outlined.Star,
+                contentDescription = "Estrella vacía",
+                tint = starColor.copy(alpha = 0.5f), // Más tenues
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }

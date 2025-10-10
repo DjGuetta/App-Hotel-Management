@@ -14,10 +14,16 @@ data class Room(
     val capacity: Int,
     val status: String = "Available", // Available, Occupied, Maintenance, Cleaning
     val isActive: Boolean = true,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val images: List<String> = emptyList()
 ) {
     companion object {
         fun fromDocument(doc: Document): Room {
+            val imageList = try {
+                doc.getList("images", String::class.java) ?: emptyList()
+            } catch (e: Exception) {
+                emptyList<String>()
+            }
             return Room(
                 _id = doc.getObjectId("_id"),
                 hotelId = doc.getObjectId("hotelId"),
@@ -29,7 +35,8 @@ data class Room(
                 capacity = doc.getInteger("capacity"),
                 status = doc.getString("status"),
                 isActive = doc.getBoolean("isActive", true),
-                createdAt = doc.getLong("createdAt")
+                createdAt = doc.getLong("createdAt"),
+                images = imageList
             )
         }
     }
@@ -47,6 +54,7 @@ data class Room(
             put("status", status)
             put("isActive", isActive)
             put("createdAt", createdAt)
+            put("images", images)
         }
     }
 }

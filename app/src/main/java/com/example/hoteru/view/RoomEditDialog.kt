@@ -1,219 +1,209 @@
 package com.example.hoteru.view
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.util.Base64
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.hoteru.model.Room
-import org.bson.types.ObjectId
+import com.example.hoteru.viewModel.RoomManagementViewModel
+
+// --- HELPERS (Funciones de Ayuda para este fichero) ---
+
+@Composable
+private fun rememberImagePickerLauncher(onImagesSelected: (List<ByteArray>) -> Unit): () -> Unit {
+    val context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickMultipleVisualMedia(),
+        onResult = { uris ->
+            if (uris.isNotEmpty()) {
+                val byteArrays = uris.mapNotNull { uri ->
+                    try {
+                        context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    } catch (e: Exception) { null }
+                }
+                onImagesSelected(byteArrays)
+            }
+        }
+    )
+    return { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+}
+
+@Composable
+private fun rememberBitmapFromBase64(base64String: String): Bitmap? {
+    return remember(base64String) {
+        try {
+            val imageBytes = Base64.decode(base64String, Base64.DEFAULT)
+            BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+        } catch (e: Exception) {
+            Log.e("Base64Decoder", "Error decodificando Base64: ${e.message}")
+            null
+        }
+    }
+}
+
+// --- DIÁLOGO PRINCIPAL ---
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoomEditDialog(
-    room: Room?,
-    hotelId: ObjectId,
-    onDismiss: () -> Unit,
-    onSave: (Room) -> Unit
+    room: Room,
+    viewModel: RoomManagementViewModel,
+    onDismiss: () -> Unit
 ) {
-    var roomNumber by remember { mutableStateOf(room?.roomNumber ?: "") }
-    var roomType by remember { mutableStateOf(room?.roomType ?: "Individual") }
-    var pricePerNight by remember { mutableStateOf(room?.pricePerNight?.toString() ?: "") }
-    var description by remember { mutableStateOf(room?.description ?: "") }
-    var capacity by remember { mutableStateOf(room?.capacity?.toString() ?: "1") }
-    var status by remember { mutableStateOf(room?.status ?: "Available") }
-    var amenities by remember { mutableStateOf(room?.amenities?.joinToString(", ") ?: "") }
+    val currentRoom by viewModel.selectedRoom.collectAsState()
+    val roomForForm = currentRoom ?: room
 
-    val roomTypes = listOf("Individual", "Doble", "Suite", "Familiar", "Presidencial")
-    val statusTranslations = remember {
-        mapOf(
-            "Available" to "Disponible",
-            "Occupied" to "Ocupada",
-            "Maintenance" to "En Mantenimiento",
-            "Cleaning" to "Limpieza"
-        )
+    val roomTypes = listOf("Individual", "Doble", "Matrimonial", "Suite", "Familiar", "Apartamento")
+    var isRoomTypeExpanded by remember { mutableStateOf(false) }
+
+    val launchImagePicker = rememberImagePickerLauncher { byteArrays ->
+        viewModel.addImages(byteArrays)
     }
 
-    // --- Variables de estado para los menús desplegables ---
-    var isRoomTypeExpanded by remember { mutableStateOf(false) }
-    var isStatusExpanded by remember { mutableStateOf(false) }
-
     Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
-            shape = MaterialTheme.shapes.large
-        ) {
+        Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Column(
-                modifier = Modifier.padding(24.dp)
+                modifier = Modifier
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = if (room == null) "Agregar Habitación" else "Editar Habitación",
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Cerrar")
-                    }
-                }
+                Text(
+                    text = if (roomForForm.roomNumber.isBlank()) "Nueva Habitación" else "Editar Habitación #${roomForForm.roomNumber}",
+                    style = MaterialTheme.typography.titleLarge
+                )
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Formulario
+                // --- FORMULARIO ---
                 OutlinedTextField(
-                    value = roomNumber,
-                    onValueChange = { roomNumber = it },
-                    label = { Text("Número de habitación") },
+                    value = roomForForm.roomNumber,
+                    onValueChange = { viewModel.updateSelectedRoom(roomForForm.copy(roomNumber = it)) },
+                    label = { Text("Número de Habitación") },
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // --- TIPO DE HABITACIÓN  ---
                 ExposedDropdownMenuBox(
                     expanded = isRoomTypeExpanded,
                     onExpandedChange = { isRoomTypeExpanded = it }
                 ) {
                     OutlinedTextField(
-                        value = roomType,
+                        value = roomForForm.roomType,
                         onValueChange = {},
-                        label = { Text("Tipo de habitación") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(), //Ancla el menú al TextField
                         readOnly = true,
-                        trailingIcon = { //Añade el icono de la flecha
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = isRoomTypeExpanded)
-                        }
+                        label = { Text("Tipo de Habitación") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isRoomTypeExpanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
                     )
-                    ExposedDropdownMenu(
-                        expanded = isRoomTypeExpanded,
-                        onDismissRequest = { isRoomTypeExpanded = false }
-                    ) {
+                    ExposedDropdownMenu(expanded = isRoomTypeExpanded, onDismissRequest = { isRoomTypeExpanded = false }) {
                         roomTypes.forEach { type ->
                             DropdownMenuItem(
                                 text = { Text(type) },
                                 onClick = {
-                                    roomType = type
-                                    isRoomTypeExpanded = false //Cierra el menú al seleccionar
+                                    viewModel.updateSelectedRoom(roomForForm.copy(roomType = type))
+                                    isRoomTypeExpanded = false
                                 }
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
                 OutlinedTextField(
-                    value = pricePerNight,
-                    onValueChange = { pricePerNight = it },
-                    label = { Text("Precio por noche") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Descripción") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = false,
-                    maxLines = 3
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = capacity,
-                    onValueChange = { capacity = it },
-                    label = { Text("Capacidad") },
+                    value = if (roomForForm.pricePerNight == 0.0) "" else roomForForm.pricePerNight.toString(),
+                    onValueChange = { viewModel.updateSelectedRoom(roomForForm.copy(pricePerNight = it.toDoubleOrNull() ?: 0.0)) },
+                    label = { Text("Precio por Noche") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // --- ESTADO ---
-                ExposedDropdownMenuBox(
-                    expanded = isStatusExpanded,
-                    onExpandedChange = { isStatusExpanded = it }
-                ) {
-                    OutlinedTextField(
-                        value = statusTranslations[status]?: status,
-                        onValueChange = {},
-                        label = { Text("Estado") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(),
-                        readOnly = true,
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = isStatusExpanded)
-                        }
-                    )
-                    ExposedDropdownMenu(
-                        expanded = isStatusExpanded,
-                        onDismissRequest = { isStatusExpanded = false }
-                    ) {
-                        statusTranslations.forEach { (statusInEnglish, statusInSpanish) ->
-                            DropdownMenuItem(
-                                text = { Text(statusInSpanish) },
-                                onClick = {
-                                    status = statusInEnglish
-                                    isStatusExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
                 OutlinedTextField(
-                    value = amenities,
-                    onValueChange = { amenities = it },
-                    label = { Text("Servicios (separados por coma)") },
+                    value = if (roomForForm.capacity == 0) "" else roomForForm.capacity.toString(),
+                    onValueChange = { viewModel.updateSelectedRoom(roomForForm.copy(capacity = it.toIntOrNull() ?: 0)) },
+                    label = { Text("Capacidad (personas)") },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("WiFi, TV, A/C, Minibar") }
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = {
-                        val newRoom = Room(
-                            _id = room?._id ?: ObjectId(),
-                            hotelId = hotelId,
-                            roomNumber = roomNumber,
-                            roomType = roomType,
-                            pricePerNight = pricePerNight.toDoubleOrNull() ?: 0.0,
-                            description = description,
-                            amenities = amenities.split(",").map { it.trim() }.filter { it.isNotEmpty() }, // <--- MEJORA: Evita servicios vacíos
-                            capacity = capacity.toIntOrNull() ?: 1,
-                            status = status
-                        )
-                        onSave(newRoom)
-                    },
+                OutlinedTextField(
+                    value = roomForForm.description,
+                    onValueChange = { viewModel.updateSelectedRoom(roomForForm.copy(description = it)) },
+                    label = { Text("Descripción") },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = roomNumber.isNotEmpty() && pricePerNight.isNotEmpty()
-                ) {
-                    Text(if (room == null) "Agregar Habitación" else "Actualizar Habitación")
+                    maxLines = 4
+                )
+
+                // --- SECCIÓN DE IMÁGENES ---
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Imágenes", fontWeight = FontWeight.Bold)
+
+                if (roomForForm.images.isNotEmpty()) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(vertical = 8.dp)
+                    ) {
+                        items(roomForForm.images) { base64Image ->
+                            val bitmap = rememberBitmapFromBase64(base64String = base64Image)
+                            if (bitmap != null) {
+                                Image(
+                                    bitmap = bitmap.asImageBitmap(),
+                                    contentDescription = "Imagen de la habitación",
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+                                        .clip(RoundedCornerShape(8.dp)), // Para redondear la imagen
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Text(
+                        "No hay imágenes cargadas",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+
+                OutlinedButton(onClick = { launchImagePicker() }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.Add, contentDescription = "Añadir Imagen")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Añadir Imagen")
+                }
+
+                // --- BOTONES DE ACCIÓN ---
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) { Text("Cancelar") }
+                    Button(onClick = { viewModel.saveRoom(roomForForm) }) {
+                        Text("Guardar")
+                    }
                 }
             }
         }

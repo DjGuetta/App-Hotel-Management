@@ -30,7 +30,6 @@ class BookingManagementViewModel : ViewModel() {
                 MongoDBConnection.getActiveBookingsByHotel(objectId)
                     .catch { e ->
                         Log.e(TAG, "Error en el flow de reservas: ${e.message}", e)
-                        // Asegurarse de que el loading se quita en caso de error en el Flow
                         _isLoading.value = false
                     }
                     .collect { bookingList ->
@@ -47,30 +46,19 @@ class BookingManagementViewModel : ViewModel() {
 
     fun performCheckIn(bookingId: ObjectId, hotelId: String) {
         viewModelScope.launch {
-            // Asumimos que la lógica de validación (hora y día) se hace en la UI
-            // antes de llamar a esta función, para habilitar/deshabilitar el botón.
-
-            // Llamamos a una nueva función de la BD que actualiza status y fecha
             val success = MongoDBConnection.setBookingCheckIn(bookingId)
-
             if (success) {
                 Log.d(TAG, "Check-In realizado con éxito para la reserva $bookingId.")
                 loadActiveBookings(hotelId)
             } else {
                 Log.e(TAG, "Error al realizar el Check-In para la reserva $bookingId.")
-                // Aquí podrías emitir un evento de error a la UI
             }
         }
     }
 
     fun performCheckOut(bookingId: ObjectId, hotelId: String) {
         viewModelScope.launch {
-            // Asumimos que la lógica de validación (hora y día) se hace en la UI
-            // antes de llamar a esta función.
-
-            // Llamamos a una nueva función de la BD
             val success = MongoDBConnection.setBookingCheckOut(bookingId)
-
             if (success) {
                 Log.d(TAG, "Check-Out realizado con éxito para la reserva $bookingId.")
                 loadActiveBookings(hotelId)
@@ -80,18 +68,18 @@ class BookingManagementViewModel : ViewModel() {
         }
     }
 
-    // --- LÓGICA DE CREACIÓN ---
-    fun createBooking(booking: Booking) {
+    // --- LÓGICA DE GUARDADO/CREACIÓN UNIFICADA ---
+    fun saveBooking(booking: Booking) {
         viewModelScope.launch {
-            val success = MongoDBConnection.insertBooking(booking)
+            // Llama a la nueva función inteligente en MongoDBConnection.
+            // Esta función sabe si debe insertar o actualizar.
+            val success = MongoDBConnection.saveBooking(booking)
             if (success) {
-                Log.d(TAG, "Reserva creada con éxito. Recargando...")
-                // Después de insertar, simplemente llamamos a la función de carga.
-                // Esta función se encargará de gestionar el estado de "isLoading" de principio a fin.
-                loadActiveBookings(booking.hotelId.toHexString())
+                Log.d(TAG, "Reserva guardada (creada/actualizada) con éxito. Recargando...")
+                // Después de guardar, recargamos la lista para que la UI se actualice.
+                loadActiveBookings(booking.hotelId.toString())
             } else {
-                Log.e(TAG, "Error al crear la reserva.")
-                // Si la creación falla, podríamos querer mostrar un mensaje de error.
+                Log.e(TAG, "Error al guardar la reserva.")
             }
         }
     }

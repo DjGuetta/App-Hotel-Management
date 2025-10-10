@@ -15,14 +15,14 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.bson.types.ObjectId
+import android.util.Base64
 
 class RoomManagementViewModel : ViewModel() {
 
-    // --- NUEVOS StateFlows para la vista global ---
+    // --- StateFlows para la vista global ---
     private val _roomDetailsByHotel = MutableStateFlow<Map<String, List<RoomDetails>>>(emptyMap())
     val roomDetailsByHotel: StateFlow<Map<String, List<RoomDetails>>> = _roomDetailsByHotel.asStateFlow()
 
-    // --- StateFlows existentes (aún útiles para diálogos de edición/creación) ---
     private val _selectedRoom = MutableStateFlow<Room?>(null)
     val selectedRoom: StateFlow<Room?> = _selectedRoom.asStateFlow()
 
@@ -40,7 +40,7 @@ class RoomManagementViewModel : ViewModel() {
         loadAllData() // Cambiamos la función inicial para que cargue todo
     }
 
-    // --- NUEVA FUNCIÓN DE CARGA PRINCIPAL ---
+    // --- FUNCIÓN DE CARGA PRINCIPAL ---
     fun loadAllData() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -78,10 +78,6 @@ class RoomManagementViewModel : ViewModel() {
                 }
         }
     }
-
-    // --- FUNCIONES CRUD ADAPTADAS ---
-    // Ahora, después de cada operación, recargamos la lista global.
-
     fun createRoom(room: Room) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -100,7 +96,59 @@ class RoomManagementViewModel : ViewModel() {
             }
         }
     }
+    /**
+     * Actualiza el estado de la habitación seleccionada.
+     * La UI llamará a esto cada vez que un campo del formulario cambie.
+     */
+    fun updateSelectedRoom(updatedRoom: Room) {
+        _selectedRoom.value = updatedRoom
+    }
 
+    /**
+     * Recibe una lista de imágenes en formato ByteArray, las convierte a Base64
+     * y las añade a la habitación que está actualmente seleccionada para edición.
+     */
+    fun addImages(imageByteArrays: List<ByteArray>) {
+        val currentRoom = _selectedRoom.value ?: return
+
+        // La lógica de conversión vive aquí, en el ViewModel.
+        val base64Strings = imageByteArrays.map { byteArray ->
+            Base64.encodeToString(byteArray, Base64.DEFAULT)
+        }
+
+        // Actualizamos el StateFlow. La UI se reconstruirá automáticamente.
+        _selectedRoom.value = currentRoom.copy(
+            images = currentRoom.images + base64Strings
+        )
+    }
+    fun saveRoom(room: Room) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                // Determinamos si es una creación o una actualización
+                val isUpdate = _roomDetailsByHotel.value.values.flatten().any { it.room._id == room._id }
+
+                val document = room.toDocument() // Asegúrate de que Room tenga una función toDocument()
+                val success = if (isUpdate) {
+                    MongoDBConnection.updateRoom(room._id, document)
+                } else {
+                    MongoDBConnection.insertRoom(document)
+                }
+
+                if (success) {
+                    _toastMessage.value = if (isUpdate) "✅ Habitación actualizada" else "✅ Habitación creada"
+                    loadAllRoomsGroupedByHotel() // Recargar la lista global
+                    selectRoom(null) // Cierra el diálogo de edición
+                } else {
+                    _toastMessage.value = if (isUpdate) "❌ Error al actualizar" else "❌ Error al crear"
+                }
+            } catch (e: Exception) {
+                _toastMessage.value = "💥 Error: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
     fun updateRoom(updatedRoom: Room) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -161,9 +209,6 @@ class RoomManagementViewModel : ViewModel() {
     fun clearToastMessage() {
         _toastMessage.value = null
     }
-
-    // --- MANTENEMOS LAS FUNCIONES ANTIGUAS POR SI SON NECESARIAS EN OTRO LADO ---
-    // Pero la pantalla principal ya no las usará.
     private val _rooms = MutableStateFlow<List<Room>>(emptyList())
     val rooms: StateFlow<List<Room>> = _rooms.asStateFlow()
     private var currentHotelId: ObjectId? = null

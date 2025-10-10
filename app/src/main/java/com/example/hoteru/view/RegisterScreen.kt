@@ -235,7 +235,7 @@ private fun AppHeader() {
                 .size(80.dp)
                 .padding(12.dp),
         )
-        Text("HotelHub", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+        Text("AndeStay", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
         Text("Todo en hoteleria Tachirense", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
     }
 }

@@ -533,11 +533,14 @@ object MongoDBConnection {
                 isActive = document.getBoolean("isActive") ?: true,
                 roomCount = document.getInteger("roomCount") ?: 0,
                 availableRooms = document.getInteger("availableRooms")
-                    ?: document.getInteger("roomCount") ?: 0
+                    ?: document.getInteger("roomCount") ?: 0,
+                checkInTime = document.getString("checkInTime") ?: "15:00",
+                checkOutTime = document.getString("checkOutTime") ?: "12:00"
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error convirtiendo documento a hotel: ${e.message}")
             Hotel(
+                _id = ObjectId(), // Evita errores si la conversión falla del todo
                 name = "Error cargando hotel",
                 description = "No se pudieron cargar los datos del hotel"
             )
@@ -675,6 +678,72 @@ object MongoDBConnection {
             false
         }
     }
+    /**
+     * Realiza el check-in de una reserva: cambia el estado a CHECKED_IN y guarda la fecha/hora actual.
+     * También actualiza el estado de la habitación a OCUPADA.
+     */
+    suspend fun setBookingCheckIn(bookingId: ObjectId): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val bookingsCollection = database.getCollection("Bookings")
+            val filter = eq("_id", bookingId)
+
+            // Buscamos la reserva primero para obtener el roomId
+            val bookingDoc = bookingsCollection.find(filter).first() ?: return@withContext false
+            val booking = Booking.fromDocument(bookingDoc)
+
+            // Creamos la operación de actualización
+            val update = Document("\$set", Document()
+                .append("status", "CHECKED_IN")
+                .append("actualCheckIn", Date()) // Guarda la marca de tiempo actual
+            )
+
+            val result = bookingsCollection.updateOne(filter, update)
+
+            if (result.modifiedCount > 0) {
+                // Si el check-in fue exitoso, actualizamos el estado de la habitación
+                updateRoomStatus(booking.roomId, "OCUPADA")
+                return@withContext true
+            }
+            false
+        } catch (e: Exception) {
+            Log.e(TAG, "Error realizando check-in en la BD: ${e.message}", e)
+            false
+        }
+    }
+
+    /**
+     * Realiza el check-out de una reserva: cambia el estado a CHECKED_OUT y guarda la fecha/hora actual.
+     * También actualiza el estado de la habitación a DISPONIBLE (o LIMPIEZA si prefieres).
+     */
+    suspend fun setBookingCheckOut(bookingId: ObjectId): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val bookingsCollection = database.getCollection("Bookings")
+            val filter = eq("_id", bookingId)
+
+            // Buscamos la reserva primero para obtener el roomId
+            val bookingDoc = bookingsCollection.find(filter).first() ?: return@withContext false
+            val booking = Booking.fromDocument(bookingDoc)
+
+            // Creamos la operación de actualización
+            val update = Document("\$set", Document()
+                .append("status", "CHECKED_OUT")
+                .append("actualCheckOut", Date()) // Guarda la marca de tiempo actual
+            )
+
+            val result = bookingsCollection.updateOne(filter, update)
+
+            if (result.modifiedCount > 0) {
+                // Si el check-out fue exitoso, liberamos la habitación
+                // Podrías cambiar "DISPONIBLE" por "LIMPIEZA" si quieres un paso intermedio
+                updateRoomStatus(booking.roomId, "DISPONIBLE")
+                return@withContext true
+            }
+            false
+        } catch (e: Exception) {
+            Log.e(TAG, "Error realizando check-out en la BD: ${e.message}", e)
+            false
+        }
+    }
     // --- FUNCIÓN PARA LA PANTALLA GLOBAL DE RESERVAS ---
 
     fun getAllActiveBookingDetails(): Flow<List<BookingDetails>> = flow {
@@ -738,6 +807,7 @@ object MongoDBConnection {
             emit(emptyList())
         }
     }.flowOn(Dispatchers.IO)
+
     // --- FUNCIÓN PARA EL DASHBOARD ---
     suspend fun getDashboardStats(): DashboardStats {
         return try {

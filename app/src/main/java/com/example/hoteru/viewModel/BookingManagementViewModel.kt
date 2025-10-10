@@ -45,15 +45,37 @@ class BookingManagementViewModel : ViewModel() {
         }
     }
 
-    fun updateBookingStatus(bookingId: ObjectId, newStatus: String, hotelId: String) {
+    fun performCheckIn(bookingId: ObjectId, hotelId: String) {
         viewModelScope.launch {
-            val success = MongoDBConnection.updateBookingStatus(bookingId, newStatus)
+            // Asumimos que la lógica de validación (hora y día) se hace en la UI
+            // antes de llamar a esta función, para habilitar/deshabilitar el botón.
+
+            // Llamamos a una nueva función de la BD que actualiza status y fecha
+            val success = MongoDBConnection.setBookingCheckIn(bookingId)
+
             if (success) {
-                Log.d(TAG, "Estado de reserva actualizado con éxito.")
-                // Simplemente recargamos, la función loadActiveBookings ya maneja el estado de carga
+                Log.d(TAG, "Check-In realizado con éxito para la reserva $bookingId.")
                 loadActiveBookings(hotelId)
             } else {
-                Log.e(TAG, "Error al actualizar el estado de la reserva.")
+                Log.e(TAG, "Error al realizar el Check-In para la reserva $bookingId.")
+                // Aquí podrías emitir un evento de error a la UI
+            }
+        }
+    }
+
+    fun performCheckOut(bookingId: ObjectId, hotelId: String) {
+        viewModelScope.launch {
+            // Asumimos que la lógica de validación (hora y día) se hace en la UI
+            // antes de llamar a esta función.
+
+            // Llamamos a una nueva función de la BD
+            val success = MongoDBConnection.setBookingCheckOut(bookingId)
+
+            if (success) {
+                Log.d(TAG, "Check-Out realizado con éxito para la reserva $bookingId.")
+                loadActiveBookings(hotelId)
+            } else {
+                Log.e(TAG, "Error al realizar el Check-Out para la reserva $bookingId.")
             }
         }
     }

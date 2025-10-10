@@ -16,7 +16,9 @@ data class Booking(
     val guestEmail: String,
     val totalCost: Double,
     val status: String = "CONFIRMED", // CONFIRMED, CHECKED_IN, CHECKED_OUT, CANCELLED
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val actualCheckIn: Date? = null,   // <<< Guarda la fecha y hora REAL del check-in
+    val actualCheckOut: Date? = null,  // <<< Guarda la fecha y hora REAL del check-out
 ) {
     fun toDocument(): Document {
         return Document().apply {
@@ -31,6 +33,8 @@ data class Booking(
             put("totalCost", totalCost)
             put("status", status)
             put("createdAt", createdAt)
+            actualCheckIn?.let { put("actualCheckIn", it) }     // <<< Solo se guarda si no es nulo
+            actualCheckOut?.let { put("actualCheckOut", it) }   // <<< Solo se guarda si no es nulo
         }
     }
 
@@ -47,7 +51,9 @@ data class Booking(
                 guestEmail = doc.getString("guestEmail") ?: "No proporcionado",
                 totalCost = doc.getDouble("totalCost"),
                 status = doc.getString("status"),
-                createdAt = doc.getLong("createdAt") ?: 0L
+                createdAt = doc.getLong("createdAt") ?: 0L,
+                actualCheckIn = doc.getDate("actualCheckIn"),     // <<< Se lee si existe, si no, es nulo
+                actualCheckOut = doc.getDate("actualCheckOut")    // <<< Se lee si existe, si no, es nulo
             )
         }
     }

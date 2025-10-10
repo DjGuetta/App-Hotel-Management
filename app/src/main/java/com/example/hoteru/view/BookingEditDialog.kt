@@ -1,9 +1,13 @@
 package com.example.hoteru.view
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -16,38 +20,42 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.hoteru.model.*
 import com.example.hoteru.viewModel.BookingFormViewModel
 import org.bson.types.ObjectId
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookingEditDialog(
     bookingToEdit: Booking? = null,
     onDismiss: () -> Unit,
-    onSave: (Booking) -> Unit
+    onSave: (Booking) -> Unit,
+    currentAdminId: String
 ) {
     val viewModel: BookingFormViewModel = viewModel()
 
     // --- Estados del formulario ---
     var guestName by remember { mutableStateOf(bookingToEdit?.guestName ?: "") }
     var guestEmail by remember { mutableStateOf(bookingToEdit?.guestEmail ?: "") }
-    var totalCost by remember { mutableStateOf(bookingToEdit?.totalCost?.toString() ?: "") }
-    var userId by remember { mutableStateOf(bookingToEdit?.userId ?: "") }
 
-    // --- Estados para los menús desplegables ---
+    // --- Estados para menús y fechas ---
     val hotels by viewModel.hotels.collectAsState()
     val availableRooms by viewModel.availableRooms.collectAsState()
-
     var selectedHotel by remember { mutableStateOf<Hotel?>(null) }
     var selectedRoom by remember { mutableStateOf<Room?>(null) }
+    var checkInDate by remember { mutableStateOf(bookingToEdit?.checkInDate) }
+    var checkOutDate by remember { mutableStateOf(bookingToEdit?.checkOutDate) }
+    var showCheckInDatePicker by remember { mutableStateOf(false) }
+    var showCheckOutDatePicker by remember { mutableStateOf(false) }
 
-    // Cargar el hotel y la habitación si estamos editando
+    // --- Lógica de carga ---
     LaunchedEffect(bookingToEdit) {
         if (bookingToEdit != null) {
             viewModel.loadDataForEditing(bookingToEdit)
         }
     }
-
-    // Observar los datos cargados para edición
     val initialHotel by viewModel.initialHotel.collectAsState()
     val initialRoom by viewModel.initialRoom.collectAsState()
     LaunchedEffect(initialHotel, initialRoom) {
@@ -55,9 +63,31 @@ fun BookingEditDialog(
         selectedRoom = initialRoom
     }
 
+    // <<< 1. CÁLCULO DE COSTO ROBUSTO CON derivedStateOf >>>
+    val totalCost by remember(selectedRoom, checkInDate, checkOutDate) {
+        derivedStateOf {
+            val room = selectedRoom
+            val cin = checkInDate
+            val cout = checkOutDate
+            if (room != null && cin != null && cout != null) {
+                val nights = getNightCount(cin, cout)
+                if (nights > 0) {
+                    (room.pricePerNight * nights)
+                } else {
+                    // Si las fechas son inválidas o es una sola noche, cobrar al menos una noche
+                    room.pricePerNight
+                }
+            } else {
+                0.0 // Si falta algún dato, el costo es 0
+            }
+        }
+    }
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             shape = MaterialTheme.shapes.large
         ) {
             Column(
@@ -71,20 +101,18 @@ fun BookingEditDialog(
                     style = MaterialTheme.typography.headlineSmall
                 )
 
-                // --- Selector de Hotel ---
+                // --- Sección de Selección ---
                 ExposedDropdownMenu(
                     label = "Hotel",
                     items = hotels,
                     selectedItem = selectedHotel,
                     onItemSelected = { hotel ->
                         selectedHotel = hotel
-                        selectedRoom = null // Reiniciar la habitación al cambiar de hotel
+                        selectedRoom = null
                         viewModel.loadAvailableRoomsForHotel(hotel._id)
                     },
                     itemToString = { it.name }
                 )
-
-                // --- Selector de Habitación (solo si se ha seleccionado un hotel) ---
                 if (selectedHotel != null) {
                     ExposedDropdownMenu(
                         label = "Habitación Disponible",
@@ -95,14 +123,51 @@ fun BookingEditDialog(
                     )
                 }
 
-                // --- Campos de texto ---
-                OutlinedTextField(value = guestName, onValueChange = { guestName = it }, label = { Text("Nombre del Huésped") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = guestEmail, onValueChange = { guestEmail = it }, label = { Text("Email del Huésped") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = userId, onValueChange = { userId = it }, label = { Text("ID de Usuario") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = totalCost, onValueChange = { totalCost = it }, label = { Text("Costo Total") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                // --- Sección de Datos del Huésped ---
+                OutlinedTextField(
+                    value = guestName,
+                    onValueChange = { guestName = it },
+                    label = { Text("Nombre del Huésped") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = guestEmail,
+                    onValueChange = { guestEmail = it },
+                    label = { Text("Email del Huésped") },
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-                // --- TODO: Añadir selectores de fecha (Check-in / Check-out) ---
-                // Por simplicidad, usaremos la fecha actual. En una app real, usarías un DatePickerDialog.
+                // --- Sección de Fechas ---
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "Fechas de la Estancia",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    DatePickerField(
+                        label = "Check-in",
+                        selectedDate = checkInDate,
+                        onClick = { showCheckInDatePicker = true },
+                        modifier = Modifier.weight(1f)
+                    )
+                    DatePickerField(
+                        label = "Check-out",
+                        selectedDate = checkOutDate,
+                        onClick = { showCheckOutDatePicker = true },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                // --- Campo de Costo ---
+                OutlinedTextField(
+                    value = if (totalCost > 0.0) totalCost.toString() else "",
+                    onValueChange = { /* No se puede cambiar */ },
+                    label = { Text("Costo Total") },
+                    readOnly = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = { Icon(Icons.Default.AttachMoney, contentDescription = "Costo") }
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -111,32 +176,27 @@ fun BookingEditDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("Cancelar")
-                    }
+                    TextButton(onClick = onDismiss) { Text("Cancelar") }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = {
-                            val finalRoom = selectedRoom
-                            val finalHotel = selectedHotel
-                            if (finalRoom != null && finalHotel != null) {
+                            if (selectedHotel != null && selectedRoom != null && checkInDate != null && checkOutDate != null) {
                                 val newBooking = Booking(
                                     _id = bookingToEdit?._id ?: ObjectId(),
-                                    hotelId = finalHotel._id,
-                                    roomId = finalRoom._id,
-                                    userId = userId,
+                                    hotelId = selectedHotel!!._id,
+                                    roomId = selectedRoom!!._id,
+                                    userId = bookingToEdit?.userId ?: currentAdminId,
                                     guestName = guestName,
                                     guestEmail = guestEmail,
-                                    totalCost = totalCost.toDoubleOrNull() ?: 0.0,
-                                    checkInDate = Date(), // Placeholder
-                                    checkOutDate = Date(), // Placeholder
+                                    totalCost = totalCost,
+                                    checkInDate = checkInDate!!,
+                                    checkOutDate = checkOutDate!!,
                                     status = bookingToEdit?.status ?: "CONFIRMED"
                                 )
                                 onSave(newBooking)
                             }
                         },
-                        // Habilitar el botón solo si todos los campos están llenos
-                        enabled = selectedHotel != null && selectedRoom != null && guestName.isNotBlank() && totalCost.isNotBlank()
+                        enabled = selectedHotel != null && selectedRoom != null && guestName.isNotBlank() && checkInDate != null && checkOutDate != null && totalCost > 0.0
                     ) {
                         Text("Guardar")
                     }
@@ -144,9 +204,124 @@ fun BookingEditDialog(
             }
         }
     }
+
+    // --- Diálogos de Selección de Fecha ---
+    if (showCheckInDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = System.currentTimeMillis()
+        )
+        DatePickerDialog(
+            onDismissRequest = { showCheckInDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        // --- Lógica de validación movida aquí ---
+                        val today = Calendar.getInstance().apply {
+                            set(Calendar.HOUR_OF_DAY, 0); set(
+                            Calendar.MINUTE,
+                            0
+                        ); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                        }
+                        // Solo acepta la fecha si es hoy o una fecha futura
+                        if (millis >= today.timeInMillis) {
+                            checkInDate = Date(millis)
+                            // Si el check-out es anterior, lo reseteamos
+                            if (checkOutDate?.before(Date(millis)) == true) {
+                                checkOutDate = null
+                            }
+                        }
+                    }
+                    showCheckInDatePicker = false
+                }) { Text("Aceptar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCheckInDatePicker = false }) { Text("Cancelar") }
+            }
+        ) {
+            // El DatePicker ya no tiene el parámetro que daba error
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showCheckOutDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = (checkInDate?.time ?: System.currentTimeMillis())
+        )
+        DatePickerDialog(
+            onDismissRequest = { showCheckOutDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        // --- Lógica de validación movida aquí ---
+                        val checkInTime = checkInDate?.time ?: 0
+                        // Solo acepta la fecha si es igual o posterior al check-in
+                        if (millis >= checkInTime) {
+                            checkOutDate = Date(millis)
+                        }
+                    }
+                    showCheckOutDatePicker = false
+                }) { Text("Aceptar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCheckOutDatePicker = false }) { Text("Cancelar") }
+            }
+        ) {
+            // El DatePicker ya no tiene el parámetro que daba error
+            DatePicker(state = datePickerState)
+        }
+    }
 }
 
-// Composable de ayuda genérico para menús desplegables
+
+// <<< 2. CAMPO DE FECHA CON BOX, LA SOLUCIÓN CORRECTA >>>
+@Composable
+fun DatePickerField(
+    label: String,
+    selectedDate: Date?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+    val dateText = selectedDate?.let { dateFormatter.format(it) } ?: ""
+
+    Box(modifier = modifier) {
+        OutlinedTextField(
+            value = dateText,
+            onValueChange = {},
+            label = { Text(label) },
+            readOnly = true,
+            modifier = Modifier.fillMaxWidth(),
+            trailingIcon = {
+                Icon(Icons.Default.DateRange, contentDescription = "Seleccionar fecha")
+            }
+        )
+        // Capa transparente "clicable" que cubre todo el campo de texto
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clickable(onClick = onClick)
+        )
+    }
+}
+
+
+private fun getNightCount(checkIn: Date, checkOut: Date): Long {
+    // Clona las fechas para no modificar las originales y resetea la hora
+    val start = Calendar.getInstance().apply {
+        time = checkIn
+        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+    }
+    val end = Calendar.getInstance().apply {
+        time = checkOut
+        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+    }
+    if (end.before(start) || end == start) return 0
+    val diffInMillis = end.timeInMillis - start.timeInMillis
+    return TimeUnit.DAYS.convert(diffInMillis, TimeUnit.MILLISECONDS)
+}
+
+
+// ... El resto del código (ExposedDropdownMenu) se mantiene igual ...
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun <T> ExposedDropdownMenu(
@@ -168,7 +343,9 @@ fun <T> ExposedDropdownMenu(
             readOnly = true,
             label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.menuAnchor().fillMaxWidth()
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth()
         )
         ExposedDropdownMenu(
             expanded = expanded,

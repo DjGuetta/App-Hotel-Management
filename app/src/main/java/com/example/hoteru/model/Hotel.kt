@@ -18,7 +18,9 @@ data class Hotel(
     val roomCount: Int = 0,
     val availableRooms: Int = 0,
     val adminId: String = "",
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val checkInTime: String = "15:00",  // <<< HORA ESTÁNDAR DE CHECK-IN (formato HH:mm)
+    val checkOutTime: String = "12:00" // <<< HORA ESTÁNDAR DE CHECK-OUT (formato HH:mm)
 ) {
     fun getLocationString(): String {
         return if (address.isNotEmpty() && city.isNotEmpty()) {
@@ -32,10 +34,10 @@ data class Hotel(
 
     fun getRoomStats(rooms: List<Room>): RoomStats {
         val totalRooms = rooms.size
-        val availableRooms = rooms.count { it.status == "Available" && it.isActive }
-        val occupiedRooms = rooms.count { it.status == "Occupied" && it.isActive }
-        val maintenanceRooms = rooms.count { it.status == "Maintenance" && it.isActive }
-        val cleaningRooms = rooms.count { it.status == "Cleaning" && it.isActive }
+        val availableRooms = rooms.count { it.status.equals("Available", ignoreCase = true) && it.isActive }
+        val occupiedRooms = rooms.count { it.status.equals("Occupied", ignoreCase = true) && it.isActive }
+        val maintenanceRooms = rooms.count { it.status.equals("Maintenance", ignoreCase = true) && it.isActive }
+        val cleaningRooms = rooms.count { it.status.equals("Cleaning", ignoreCase = true) && it.isActive }
 
         return RoomStats(
             total = totalRooms,

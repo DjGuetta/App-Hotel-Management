@@ -1,5 +1,6 @@
 package com.example.hoteru.view
 
+import androidx.compose.animation.core.copy
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -39,6 +40,7 @@ fun BookingEditDialog(
     // --- Estados del formulario ---
     var guestName by remember { mutableStateOf(bookingToEdit?.guestName ?: "") }
     var guestEmail by remember { mutableStateOf(bookingToEdit?.guestEmail ?: "") }
+    var guestPhone by remember { mutableStateOf(bookingToEdit?.guestPhone ?: "") }
 
     // --- Estados para menús y fechas ---
     val hotels by viewModel.hotels.collectAsState()
@@ -136,6 +138,13 @@ fun BookingEditDialog(
                     label = { Text("Email del Huésped") },
                     modifier = Modifier.fillMaxWidth()
                 )
+                OutlinedTextField(
+                    value = guestPhone,
+                    onValueChange = { guestPhone = it },
+                    label = { Text("Teléfono del Huésped") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    modifier = Modifier.fillMaxWidth()
+                )
 
                 // --- Sección de Fechas ---
                 Spacer(modifier = Modifier.height(8.dp))
@@ -188,6 +197,7 @@ fun BookingEditDialog(
                                     userId = bookingToEdit?.userId ?: currentAdminId,
                                     guestName = guestName,
                                     guestEmail = guestEmail,
+                                    guestPhone = guestPhone,
                                     totalCost = totalCost,
                                     checkInDate = checkInDate!!,
                                     checkOutDate = checkOutDate!!,
@@ -214,19 +224,20 @@ fun BookingEditDialog(
             onDismissRequest = { showCheckInDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        // --- Lógica de validación movida aquí ---
+                    datePickerState.selectedDateMillis?.let { utcMillis ->
+                        // Convierte los milisegundos UTC a un objeto Date que respeta el día seleccionado
+                        val selectedDate =
+                            Date(utcMillis + java.util.TimeZone.getDefault().getOffset(utcMillis))
                         val today = Calendar.getInstance().apply {
                             set(Calendar.HOUR_OF_DAY, 0); set(
                             Calendar.MINUTE,
                             0
                         ); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-                        }
-                        // Solo acepta la fecha si es hoy o una fecha futura
-                        if (millis >= today.timeInMillis) {
-                            checkInDate = Date(millis)
-                            // Si el check-out es anterior, lo reseteamos
-                            if (checkOutDate?.before(Date(millis)) == true) {
+                        }.time
+
+                        if (!selectedDate.before(today)) {
+                            checkInDate = selectedDate
+                            if (checkOutDate?.before(checkInDate) == true) {
                                 checkOutDate = null
                             }
                         }
@@ -238,7 +249,6 @@ fun BookingEditDialog(
                 TextButton(onClick = { showCheckInDatePicker = false }) { Text("Cancelar") }
             }
         ) {
-            // El DatePicker ya no tiene el parámetro que daba error
             DatePicker(state = datePickerState)
         }
     }
@@ -251,12 +261,21 @@ fun BookingEditDialog(
             onDismissRequest = { showCheckOutDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        // --- Lógica de validación movida aquí ---
-                        val checkInTime = checkInDate?.time ?: 0
-                        // Solo acepta la fecha si es igual o posterior al check-in
-                        if (millis >= checkInTime) {
-                            checkOutDate = Date(millis)
+                    datePickerState.selectedDateMillis?.let { utcMillis ->
+                        val selectedDate =
+                            Date(utcMillis + java.util.TimeZone.getDefault().getOffset(utcMillis))
+                        val checkInDateStartOfDay = checkInDate?.let {
+                            Calendar.getInstance().apply {
+                                time = it
+                                set(Calendar.HOUR_OF_DAY, 0); set(
+                                Calendar.MINUTE,
+                                0
+                            ); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                            }.time
+                        } ?: Date(0)
+
+                        if (!selectedDate.before(checkInDateStartOfDay)) {
+                            checkOutDate = selectedDate
                         }
                     }
                     showCheckOutDatePicker = false
@@ -266,7 +285,6 @@ fun BookingEditDialog(
                 TextButton(onClick = { showCheckOutDatePicker = false }) { Text("Cancelar") }
             }
         ) {
-            // El DatePicker ya no tiene el parámetro que daba error
             DatePicker(state = datePickerState)
         }
     }

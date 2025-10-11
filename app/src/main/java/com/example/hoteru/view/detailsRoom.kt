@@ -76,6 +76,7 @@ fun DetailsRoomScreen(
             .padding(16.dp)
 
     ) {
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -176,35 +177,53 @@ fun DetailsRoomScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                r?.getString("image")?.takeIf { it.isNotBlank() }?.let { img ->
-                    Base64Image(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(220.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .border(
-                                width = 1.dp,
-                                color = Color(0xFFE0E0E0),
-                                shape = RoundedCornerShape(14.dp)
-                            ),
-                        base64 = img
-                    )
+                val imageList = r?.getList("images", String::class.java) ?: emptyList()
+
+                if (imageList.isNotEmpty()) {
+                    imageList.forEach { img ->
+                        if (!img.isNullOrBlank()) {
+                            Base64Image(
+                                base64 = img,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(220.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .border(
+                                        width = 1.dp,
+                                        color = Color(0xFFE0E0E0),
+                                        shape = RoundedCornerShape(14.dp)
+                                    )
+                                    .padding(bottom = 10.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
+        if (r?.getString("status") == "OCUPADA"){
+            Text(
+                text = "Esta habitación se encuentra ocupada",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = Color(0xFF616161),
+                    lineHeight = 18.sp
+                )
+            )
+        }else{
+            BookingEditDialogUser(
+                navController = navController,
+                bookingToEdit = bookingToEdit,
+                hotelId = hotelId.toString(),
+                roomId = roomId.toString(),
+                onSave = { updatedBooking ->
+                    bookingViewModel.saveBooking(updatedBooking)
+                    if (!hotelId.isNullOrBlank()) {
+                        bookingViewModel.loadActiveBookings(hotelId)
+                    }
+                },
+                userId = idUser,
+            )
+        }
 
-        BookingEditDialogUser(
-            navController = navController,
-            bookingToEdit = bookingToEdit,
-            hotelId = hotelId.toString(),
-            roomId = roomId.toString(),
-            onSave = { updatedBooking ->
-                bookingViewModel.createBooking(updatedBooking)
-                if (!hotelId.isNullOrBlank()) {
-                    bookingViewModel.loadActiveBookings(hotelId)
-                }
-            },
-            userId = idUser,
-        )
+
     }
 }

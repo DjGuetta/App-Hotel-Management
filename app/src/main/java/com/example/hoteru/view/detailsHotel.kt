@@ -306,6 +306,8 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?, name: Str
     }
 
     val images = hotel?.get("images") as? List<String> ?: emptyList()
+    val features = hotel?.get("amenities") as? List<String> ?: emptyList()
+
 
     LazyColumn(
         modifier = Modifier
@@ -349,8 +351,35 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?, name: Str
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.Gray
                 )
+                Text(
+                    text = "checkIn:  ${hotel?.getString("checkInTime") ?: "Desconocido"}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+                Text(
+                    text = "checkOutT:  ${hotel?.getString("checkOutTime") ?: "Desconocido"}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
             }
 
+            if (features.isNotEmpty()) {
+                Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                    Text(
+                        text = "Servicios incluidos:",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    features.forEach { feature ->
+                        Text(
+                            text = "- $feature",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF616161)
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(12.dp))
 
             // Rating
@@ -360,7 +389,13 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?, name: Str
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.Black
             )
+
+
         }
+
+
+
+
 
 
         // Hotel images
@@ -415,10 +450,7 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?, name: Str
                 onClick = { navController.navigate("detailsroom/$id/$hotelId/$iduser") }
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Hotel: ${hotel?.getString("name") ?: "Desconocido"}",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                    )
+
                     Text(
                         text = "Tipo: ${r["roomType"]?.toString() ?: "Desconocido"}",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
@@ -437,9 +469,11 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?, name: Str
                         style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF388E3C))
                     )
 
+
+
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    r["image"]?.toString()?.takeIf { it.isNotBlank() }?.let { img ->
+                    r["images"]?.toString()?.takeIf { it.isNotBlank() }?.let { img ->
                         Base64Image(
                             modifier = Modifier
                                 .fillMaxWidth()

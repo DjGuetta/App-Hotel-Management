@@ -46,7 +46,7 @@ import java.util.Calendar
 object MongoDBConnection {
 
 //    private const val CONNECTION_DATABASE = "mongodb://172.18.26.188:27017"
-    private const val CONNECTION_DATABASE = "mongodb://192.168.1.3:27017"
+    private const val CONNECTION_DATABASE = "mongodb://10.162.78.188:27017"
 
     private const val DATABASE_NAME = "Hoteru"
 
@@ -348,7 +348,8 @@ object MongoDBConnection {
     suspend fun updateHotel(id: ObjectId, document: Document): Boolean = withContext(Dispatchers.IO) {
         try {
             val collection = database.getCollection("Hoteles")
-            val result = collection.replaceOne(Filters.eq("_id", id), document)
+            val updateOperation = Document("\$set", document)
+            val result = collection.updateOne(Filters.eq("_id", id), updateOperation)
             result.modifiedCount > 0
         } catch (e: Exception) {
             Log.e(TAG, "Error actualizando hotel: ${e.message}")
@@ -409,7 +410,8 @@ object MongoDBConnection {
     suspend fun updateRoom(id: ObjectId, document: Document): Boolean = withContext(Dispatchers.IO) {
         try {
             val collection = database.getCollection("Rooms")
-            val result = collection.replaceOne(Filters.eq("_id", id), document)
+            val updateOperation = Document("\$set", document)
+            val result = collection.updateOne(Filters.eq("_id", id), updateOperation)
             result.modifiedCount > 0
         } catch (e: Exception) {
             Log.e(TAG, "Error actualizando habitación: ${e.message}")
@@ -553,6 +555,7 @@ object MongoDBConnection {
         return try {
             Hotel(
                 _id = document.getObjectId("_id"),
+                adminId = document.getString("adminId") ?: "",
                 name = document.getString("name") ?: "",
                 address = document.getString("address") ?: "",
                 city = document.getString("city") ?: "",
@@ -568,7 +571,8 @@ object MongoDBConnection {
                 availableRooms = document.getInteger("availableRooms")
                     ?: document.getInteger("roomCount") ?: 0,
                 checkInTime = document.getString("checkInTime") ?: "15:00",
-                checkOutTime = document.getString("checkOutTime") ?: "12:00"
+                checkOutTime = document.getString("checkOutTime") ?: "12:00",
+                rating = document.getInteger("rating") ?: 0
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error convirtiendo documento a hotel: ${e.message}")
@@ -683,11 +687,51 @@ object MongoDBConnection {
         try {
             val collection = database.getCollection("Bookings")
             collection.insertOne(booking.toDocument())
-            // Aquí también se debería actualizar el estado de la habitación a "OCUPADA"
+
             updateRoomStatus(booking.roomId, "OCUPADA")
             true
         } catch (e: Exception) {
             Log.e(TAG, "Error insertando reserva: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Guarda una reserva. Si ya existe, actualiza solo los campos modificados.
+     * Si es nueva, la inserta.
+     */
+    suspend fun saveBooking(booking: Booking): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val collection = database.getCollection("Bookings")
+            val filter = Filters.eq("_id", booking._id)
+
+            // Revisa si ya existe un documento con ese ID
+            val existingBooking = collection.find(filter).firstOrNull()
+
+            if (existingBooking != null) {
+                // --- ACTUALIZAR ---
+                // Creamos una actualización no destructiva con $set
+                val updates = Document("\$set", Document()
+                    .append("guestName", booking.guestName)
+                    .append("guestEmail", booking.guestEmail)
+                    .append("guestPhone", booking.guestPhone)
+                    .append("checkInDate", booking.checkInDate)
+                    .append("checkOutDate", booking.checkOutDate)
+                    .append("totalCost", booking.totalCost)
+                    // No actualizamos el estado, ID, etc. a menos que sea necesario
+                )
+                val result = collection.updateOne(filter, updates)
+                result.modifiedCount > 0
+            } else {
+                // --- INSERTAR ---
+                // Si no existe, es una reserva nueva.
+                collection.insertOne(booking.toDocument())
+                // También actualizamos el estado de la habitación
+                updateRoomStatus(booking.roomId, "OCUPADA")
+            }
+            true // Si no hay excepción, asumimos que fue exitoso
+        } catch (e: Exception) {
+            Log.e(TAG, "Error guardando la reserva (saveBooking): ${e.message}", e)
             false
         }
     }

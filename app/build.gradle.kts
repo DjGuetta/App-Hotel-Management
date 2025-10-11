@@ -96,21 +96,6 @@ android {
 }
 
 dependencies {
-
-    //    implementation(libs.androidx.compose.ui.graphics)
-//    implementation(libs.androidx.navigation.compose)
-//    implementation(libs.androidx.compose.foundation)
-//    implementation(libs.androidx.compose.ui.text)
-//    implementation(libs.androidx.compose.material3)
-    //Para hashear contraseñas de los usuarios
-//    implementation(libs.androidx.foundation.android)
-    implementation("org.mindrot:jbcrypt:0.4")
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.compose.foundation)
-    implementation(libs.androidx.compose.ui.text)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.play.services.drive)
     // Compose Bill of Materials for consistent Compose library versions
     // BOM (Bill of Materials) de Compose para versiones consistentes de librerías
 
@@ -118,6 +103,15 @@ dependencies {
     implementation(composeBom)
     testImplementation(composeBom)
     androidTestImplementation(composeBom)
+    implementation("androidx.activity:activity-compose")
+    implementation("org.mindrot:jbcrypt:0.4")
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.ui.text)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.play.services.drive)
+
     // Material Design 3 (includes NavigationBar, Icons, etc.)
     implementation("androidx.compose.material3:material3")
 

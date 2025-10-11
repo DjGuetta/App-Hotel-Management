@@ -36,6 +36,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.hoteru.R
 import com.example.hoteru.model.Hotel
+import androidx.compose.material.icons.filled.ExitToApp
 import com.example.hoteru.model.map_data.tachiraBounds
 import com.example.hoteru.model.map_data.tachiraLatLng
 import com.example.hoteru.viewModel.AuthState
@@ -136,7 +137,7 @@ fun bitmapDescriptorFromVector(
 }
 
 @Composable
-fun HeaderOfTheMap(userName: String) {
+fun HeaderOfTheMap(userName: String, onLogoutClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -165,8 +166,16 @@ fun HeaderOfTheMap(userName: String) {
                 )
             }
         }
+        // --- BOTÓN DE LOGOUT ---
+        IconButton(onClick = onLogoutClick) {
+            Icon(
+                imageVector = Icons.Default.ExitToApp,
+                contentDescription = "Cerrar Sesión"
+            )
+        }
     }
 }
+
 
 @Composable
 fun SearchEngine(cameraPositionState: CameraPositionState) {
@@ -322,74 +331,74 @@ fun DropdownListHotel(navController: NavController, DropDownItems: List<Hotel>, 
 
 
 
-fun CloseOrOpenDropDownListMenu(scope: CoroutineScope, drawerState: DrawerState) {
-    scope.launch {
-        if (drawerState.isClosed) {
-            drawerState.open()
-        } else {
-            drawerState.close()
-        }
-    }
-}
-
-@Composable
-fun DropDownListMenu(
-    mapModel: MapViewModel,
-    scope: CoroutineScope,
-    drawerState: DrawerState
-) {
-    ModalDrawerSheet {
-        Box(modifier = Modifier.fillMaxSize()) {
-            IconButton(
-                onClick = { CloseOrOpenDropDownListMenu(scope, drawerState) },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp)
-            ) {
-                Icon(Icons.Default.Close, contentDescription = "Close Menu")
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 48.dp)
-            ) {
-                Text("Menu", modifier = Modifier.padding(16.dp))
-                Divider()
-                NavigationDrawerItem(
-                    label = { Text("Motor de búsqueda") },
-                    selected = false,
-                    onClick = {
-                        mapModel.setVisibilitySearchEngine(true)
-                        mapModel.setVisibilityPriceFilter(false)
-                        mapModel.setVisibilityRatingFilter(false)
-                        CloseOrOpenDropDownListMenu(scope, drawerState)
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Filtro por precios") },
-                    selected = false,
-                    onClick = {
-                        mapModel.setVisibilitySearchEngine(false)
-                        mapModel.setVisibilityPriceFilter(true)
-                        mapModel.setVisibilityRatingFilter(false)
-                        CloseOrOpenDropDownListMenu(scope, drawerState)
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Filtro por calificación") },
-                    selected = false,
-                    onClick = {
-                        mapModel.setVisibilitySearchEngine(false)
-                        mapModel.setVisibilityPriceFilter(false)
-                        mapModel.setVisibilityRatingFilter(true)
-                        CloseOrOpenDropDownListMenu(scope, drawerState)
-                    }
-                )
+    fun CloseOrOpenDropDownListMenu(scope: CoroutineScope, drawerState: DrawerState) {
+        scope.launch {
+            if (drawerState.isClosed) {
+                drawerState.open()
+            } else {
+                drawerState.close()
             }
         }
     }
-}
+
+    @Composable
+    fun DropDownListMenu(
+        mapModel: MapViewModel,
+        scope: CoroutineScope,
+        drawerState: DrawerState
+    ) {
+        ModalDrawerSheet {
+            Box(modifier = Modifier.fillMaxSize()) {
+                IconButton(
+                    onClick = { CloseOrOpenDropDownListMenu(scope, drawerState) },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Close Menu")
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 48.dp)
+                ) {
+                    Text("Menu", modifier = Modifier.padding(16.dp))
+                    Divider()
+                    NavigationDrawerItem(
+                        label = { Text("Motor de búsqueda") },
+                        selected = false,
+                        onClick = {
+                            mapModel.setVisibilitySearchEngine(true)
+                            mapModel.setVisibilityPriceFilter(false)
+                            mapModel.setVisibilityRatingFilter(false)
+                            CloseOrOpenDropDownListMenu(scope, drawerState)
+                        }
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Filtro por precios") },
+                        selected = false,
+                        onClick = {
+                            mapModel.setVisibilitySearchEngine(false)
+                            mapModel.setVisibilityPriceFilter(true)
+                            mapModel.setVisibilityRatingFilter(false)
+                            CloseOrOpenDropDownListMenu(scope, drawerState)
+                        }
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Filtro por calificación") },
+                        selected = false,
+                        onClick = {
+                            mapModel.setVisibilitySearchEngine(false)
+                            mapModel.setVisibilityPriceFilter(false)
+                            mapModel.setVisibilityRatingFilter(true)
+                            CloseOrOpenDropDownListMenu(scope, drawerState)
+                        }
+                    )
+                }
+            }
+        }
+    }
 
 @Composable
 fun PriceFilter(navController: NavController, user: String?) {
@@ -455,9 +464,9 @@ fun PriceFilter(navController: NavController, user: String?) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun RatingFilter(navController: NavController){
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun RatingFilter(navController: NavController) {
         var expanded by remember { mutableStateOf(false) }
         val options = listOf("1⭐", "2⭐", "3⭐", "4⭐", "5⭐")
         var selectedOption by remember { mutableStateOf(options[0]) } // default: 1 star
@@ -673,7 +682,20 @@ fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewM
                         .fillMaxWidth()
                         .background(Color.White)
                 ) {
-                    HeaderOfTheMap(userName = authState.loginSuccess?.firstName ?: "Usuario")
+                    LaunchedEffect(authState.loginSuccess) {
+                        if (authState.loginSuccess == null) {
+                            navController.navigate("login") {
+                                popUpTo("home") { inclusive = true }
+                            }
+                        }
+                    }
+
+                    // Header with working logout button
+                    HeaderOfTheMap(
+                        userName = authState.loginSuccess?.firstName ?: "Usuario",
+                        onLogoutClick = { authViewModel.logout() } // ✅ triggers state reset
+                    )
+
 
                     Row(
                         modifier = Modifier

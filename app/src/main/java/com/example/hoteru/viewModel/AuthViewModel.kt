@@ -10,6 +10,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.application
+import com.example.hoteru.viewModel.SessionManager
 
 // --- Estados para la UI ---
 data class AuthState(
@@ -19,8 +23,10 @@ data class AuthState(
     val registrationSuccess: Boolean = false
 )
 
-class AuthViewModel : ViewModel() {
-    private fun isValidEmail(email: String): Boolean = Patterns.EMAIL_ADDRESS.matcher(email).matches()
+class AuthViewModel(application: Application) : AndroidViewModel(application) {
+    private val sessionManager = SessionManager(application.applicationContext)
+    private fun isValidEmail(email: String): Boolean =
+        Patterns.EMAIL_ADDRESS.matcher(email).matches()
 
     private fun isValidPassword(password: String): Boolean = password.length >= 8
 
@@ -36,6 +42,9 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             _authState.update { it.copy(isLoading = true, error = null) }
             val user = MongoDBConnection.findUserByCredentials(email, password)
+            if (user != null) {
+                sessionManager.saveSession(user.email)
+            }
             _authState.update {
                 it.copy(
                     isLoading = false,
@@ -81,6 +90,7 @@ class AuthViewModel : ViewModel() {
             }
         }
     }
+
     fun onEventHandled() {
         _authState.update { currentState ->
             currentState.copy(
@@ -90,7 +100,10 @@ class AuthViewModel : ViewModel() {
             )
         }
     }
+
     fun logout() {
+        sessionManager.clearSession()
+        // Resetea el estado de autenticación en la app
         _authState.update { AuthState() }
     }
 }

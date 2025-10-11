@@ -470,6 +470,7 @@ fun BookingEditDialogUser(
                                 guestName = userGot?.firstName ?: "Usuario",
                                 guestEmail = userGot?.email ?: "correo@ejemplo.com",
                                 totalCost = totalCost,
+                                guestPhone = userGot?.phone ?: "1234567890",
                                 checkInDate = checkInDate!!,
                                 checkOutDate = checkOutDate!!,
                                 status = bookingToEdit?.status ?: "CONFIRMED"
@@ -586,7 +587,6 @@ fun DatePickerFieldUser(
         )
     }
 }
-
 // Función auxiliar para contar noches
 private fun getNightCount(checkIn: Date, checkOut: Date): Long {
     val start = Calendar.getInstance().apply {

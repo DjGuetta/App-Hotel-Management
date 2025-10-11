@@ -38,9 +38,12 @@ fun RoomManagementScreen(navController: NavController) {
     val hotels by viewModel.hotels.collectAsState()
 
     var showSelectHotelDialog by remember { mutableStateOf(false) }
-    var showAddRoomDialog by remember { mutableStateOf<Hotel?>(null) }
-    var roomToEdit by remember { mutableStateOf<Room?>(null) }
-    var showDeleteConfirmDialog by remember { mutableStateOf<Room?>(null) }
+
+    // --- 1. 'val' (solo lectura) ---
+    val roomToEdit by viewModel.selectedRoom.collectAsState()
+
+    // --- 2. 'roomToDelete' para claridad ---
+    var roomToDelete by remember { mutableStateOf<Room?>(null) }
 
     Scaffold(
         topBar = {
@@ -88,8 +91,10 @@ fun RoomManagementScreen(navController: NavController) {
                         items(roomDetails, key = { it.room._id }) { detail ->
                             RoomCard(
                                 room = detail.room,
-                                onEditClick = { roomToEdit = detail.room },
-                                onDeleteClick = { showDeleteConfirmDialog = detail.room },
+                                // --- 3. Llamamos a la función del ViewModel ---
+                                onEditClick = { viewModel.selectRoom(detail.room) },
+                                // --- 4. Usamos la variable renombrada 'roomToDelete' ---
+                                onDeleteClick = { roomToDelete = detail.room },
                                 onStatusChange = { room, newStatus ->
                                     viewModel.updateRoomStatus(room._id, newStatus)
                                 }
@@ -100,59 +105,57 @@ fun RoomManagementScreen(navController: NavController) {
             }
         }
 
+        // --- Diálogo para seleccionar hotel (al crear) ---
         if (showSelectHotelDialog) {
             SelectHotelDialog(
                 hotels = hotels,
                 onDismiss = { showSelectHotelDialog = false },
                 onHotelSelected = { hotel ->
                     showSelectHotelDialog = false
-                    showAddRoomDialog = hotel
+                    // --- 5. Creamos un objeto Room completo con valores por defecto ---
+                    val newRoom = Room(
+                        hotelId = hotel._id,
+                        roomNumber = "",
+                        roomType = "Individual",
+                        pricePerNight = 0.0,
+                        description = "",
+                        amenities = emptyList(),
+                        capacity = 1,
+                        status = "DISPONIBLE",
+                        images = emptyList()
+                    )
+                    viewModel.selectRoom(newRoom)
                 }
             )
         }
 
-        showAddRoomDialog?.let { hotel ->
-            RoomEditDialog(
-                hotel = hotel,
-                onDismiss = { showAddRoomDialog = null },
-                onConfirm = { room ->
-                    viewModel.createRoom(room)
-                    showAddRoomDialog = null
-                }
-            )
-        }
-
+        // --- Diálogo de Edición/Creación ---
+        // Se muestra si hay una habitación seleccionada en el ViewModel
         roomToEdit?.let { room ->
             RoomEditDialog(
-                roomToEdit = room,
-                onDismiss = { roomToEdit = null },
-                onConfirm = { updatedRoom ->
-                    viewModel.updateRoom(updatedRoom)
-                    roomToEdit = null
-                }
+                room = room,
+                viewModel = viewModel,
+                onDismiss = { viewModel.selectRoom(null) } // Limpia la selección para cerrar
             )
         }
 
-        showDeleteConfirmDialog?.let { room ->
+        // --- Diálogo de confirmación de borrado ---
+        roomToDelete?.let { room ->
             AlertDialog(
-                onDismissRequest = { showDeleteConfirmDialog = null },
+                onDismissRequest = { roomToDelete = null },
                 title = { Text("Confirmar Eliminación") },
                 text = { Text("¿Estás seguro de que quieres eliminar la habitación #${room.roomNumber}?") },
                 confirmButton = {
                     Button(
                         onClick = {
                             viewModel.deleteRoom(room._id)
-                            showDeleteConfirmDialog = null
+                            roomToDelete = null
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Text("Eliminar")
-                    }
+                    ) { Text("Eliminar") }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showDeleteConfirmDialog = null }) {
-                        Text("Cancelar")
-                    }
+                    TextButton(onClick = { roomToDelete = null }) { Text("Cancelar") }
                 }
             )
         }
@@ -300,7 +303,9 @@ fun StatusDropdown(
         onExpandedChange = { expanded = !expanded }
     ) {
         Row(
-            modifier = Modifier.menuAnchor().clickable { expanded = true },
+            modifier = Modifier
+                .menuAnchor()
+                .clickable { expanded = true },
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -322,115 +327,6 @@ fun StatusDropdown(
                         expanded = false
                     }
                 )
-            }
-        }
-    }
-}
-
-// --- VERSIÓN FINAL CON MENÚ DESPLEGABLE ---
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun RoomEditDialog(
-    hotel: Hotel? = null,
-    roomToEdit: Room? = null,
-    onDismiss: () -> Unit,
-    onConfirm: (Room) -> Unit
-) {
-    val isEditing = roomToEdit != null
-    val title = if (isEditing) "Editar Habitación #${roomToEdit?.roomNumber}" else "Nueva Habitación para ${hotel?.name}"
-
-    var roomNumber by remember { mutableStateOf(roomToEdit?.roomNumber ?: "") }
-    var price by remember { mutableStateOf(roomToEdit?.pricePerNight?.toString() ?: "") }
-    var capacity by remember { mutableStateOf(roomToEdit?.capacity?.toString() ?: "") }
-    var description by remember { mutableStateOf(roomToEdit?.description ?: "") }
-
-    // --- CAMBIOS PARA EL MENÚ DESPLEGABLE DE TIPO DE HABITACIÓN ---
-    val roomTypes = listOf("Individual", "Doble", "Matrimonial", "Suite", "Familiar", "Apartamento")
-    var expanded by remember { mutableStateOf(false) }
-    var selectedRoomType by remember { mutableStateOf(roomToEdit?.roomType ?: roomTypes[0]) } // Inicia con el tipo actual o el primero de la lista
-
-    Dialog(onDismissRequest = onDismiss) {
-        Card {
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(title, style = MaterialTheme.typography.titleLarge)
-                OutlinedTextField(value = roomNumber, onValueChange = { roomNumber = it }, label = { Text("Número de Habitación") }, modifier = Modifier.fillMaxWidth())
-
-                // --- MENÚ DESPLEGABLE PARA EL TIPO DE HABITACIÓN ---
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    OutlinedTextField(
-                        value = selectedRoomType,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Tipo de Habitación") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        roomTypes.forEach { type ->
-                            DropdownMenuItem(
-                                text = { Text(type) },
-                                onClick = {
-                                    selectedRoomType = type
-                                    expanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-                // --- FIN DEL MENÚ DESPLEGABLE ---
-
-                OutlinedTextField(value = price, onValueChange = { price = it }, label = { Text("Precio por Noche") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = capacity, onValueChange = { capacity = it }, label = { Text("Capacidad (personas)") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Descripción") }, modifier = Modifier.fillMaxWidth())
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) { Text("Cancelar") }
-                    Spacer(Modifier.width(8.dp))
-                    Button(onClick = {
-                        val finalRoom = if (isEditing) {
-                            roomToEdit!!.copy(
-                                roomNumber = roomNumber,
-                                roomType = selectedRoomType, // Usar el tipo seleccionado
-                                pricePerNight = price.toDoubleOrNull() ?: 0.0,
-                                capacity = capacity.toIntOrNull() ?: 0,
-                                description = description
-                            )
-                        } else {
-                            Room(
-                                _id = ObjectId(),
-                                hotelId = hotel!!._id,
-                                roomNumber = roomNumber,
-                                roomType = selectedRoomType, // Usar el tipo seleccionado
-                                status = "DISPONIBLE",
-                                pricePerNight = price.toDoubleOrNull() ?: 0.0,
-                                amenities = listOf(),
-                                capacity = capacity.toIntOrNull() ?: 0,
-                                description = description
-                            )
-                        }
-                        onConfirm(finalRoom)
-                    }) {
-                        Text("Guardar")
-                    }
-                }
             }
         }
     }

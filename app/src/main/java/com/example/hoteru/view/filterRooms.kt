@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import MapViewModel
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -112,15 +113,26 @@ fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String
                             )
 
                             Spacer(modifier = Modifier.height(8.dp))
+                            val imageList = r?.getList("images", String::class.java) ?: emptyList()
 
-                            r.getString("image")?.takeIf { it.isNotBlank() }?.let { img ->
-                                Base64Image(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(160.dp)
-                                        .clip(RoundedCornerShape(10.dp)),
-                                    base64 = img
-                                )
+                            if (imageList.isNotEmpty()) {
+                                imageList.forEach { img ->
+                                    if (!img.isNullOrBlank()) {
+                                        Base64Image(
+                                            base64 = img,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(220.dp)
+                                                .clip(RoundedCornerShape(14.dp))
+                                                .border(
+                                                    width = 1.dp,
+                                                    color = Color(0xFFE0E0E0),
+                                                    shape = RoundedCornerShape(14.dp)
+                                                )
+                                                .padding(bottom = 10.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

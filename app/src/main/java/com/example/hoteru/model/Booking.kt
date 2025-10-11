@@ -14,6 +14,7 @@ data class Booking(
     val checkOutDate: Date,
     val guestName: String,
     val guestEmail: String,
+    val guestPhone: String,
     val totalCost: Double,
     val status: String = "CONFIRMED", // CONFIRMED, CHECKED_IN, CHECKED_OUT, CANCELLED
     val createdAt: Long = System.currentTimeMillis(),
@@ -30,6 +31,7 @@ data class Booking(
             put("checkOutDate", checkOutDate)
             put("guestName", guestName)
             put("guestEmail", guestEmail)
+            put("guestPhone", guestPhone)
             put("totalCost", totalCost)
             put("status", status)
             put("createdAt", createdAt)
@@ -49,6 +51,7 @@ data class Booking(
                 checkOutDate = doc.getDate("checkOutDate"),
                 guestName = doc.getString("guestName"),
                 guestEmail = doc.getString("guestEmail") ?: "No proporcionado",
+                guestPhone = doc.getString("guestPhone") ?: "No proporcionado",
                 totalCost = doc.getDouble("totalCost"),
                 status = doc.getString("status"),
                 createdAt = doc.getLong("createdAt") ?: 0L,

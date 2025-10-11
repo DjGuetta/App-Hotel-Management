@@ -19,6 +19,7 @@ data class Hotel(
     val availableRooms: Int = 0,
     val adminId: String = "",
     val createdAt: Long = System.currentTimeMillis(),
+    val rating: Int = 0, //Valor por defecto de 0.0 para hoteles nuevos o sin calificar
     val checkInTime: String = "15:00",  // <<< HORA ESTÁNDAR DE CHECK-IN (formato HH:mm)
     val checkOutTime: String = "12:00" // <<< HORA ESTÁNDAR DE CHECK-OUT (formato HH:mm)
 ) {

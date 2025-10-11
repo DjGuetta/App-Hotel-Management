@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import org.bson.Document
 import org.bson.types.ObjectId
+import android.util.Base64
 
 class HotelManagementViewModel : ViewModel() {
 
@@ -160,19 +161,6 @@ class HotelManagementViewModel : ViewModel() {
         }
     }
 
-    // Esta función local puede ser eliminada si la de MongoDBConnection ya es suficiente.
-    private fun documentToHotel(document: Document): Hotel {
-        // ... (esta función ya no es necesaria aquí si MongoDBConnection la tiene)
-        return Hotel(name = "Deprecated")
-    }
-
-    // Esta función local puede ser eliminada.
-    private fun getLocationFromDocument(document: Document): Location {
-        // ... (esta función ya no es necesaria aquí si MongoDBConnection la tiene)
-        return Location()
-    }
-
-    // <<< 2. FUNCIÓN ACTUALIZADA >>>
     private fun hotelToDocument(hotel: Hotel): Document {
         // Obtener estadísticas actuales si están disponibles
         val currentStats = getCurrentRoomStats(hotel._id)
@@ -200,6 +188,7 @@ class HotelManagementViewModel : ViewModel() {
             // <<< Añadir los nuevos campos para que se guarden en la base de datos >>>
             put("checkInTime", hotel.checkInTime)
             put("checkOutTime", hotel.checkOutTime)
+            put("rating", hotel.rating) // Guarda el valor actual del rating
         }
     }
 
@@ -273,6 +262,9 @@ class HotelManagementViewModel : ViewModel() {
             }
         }
     }
+    fun updateSelectedHotel(updatedHotel: Hotel) {
+        _selectedHotel.value = updatedHotel
+    }
 
     fun deleteHotel(hotel: Hotel) {
         viewModelScope.launch {
@@ -305,6 +297,25 @@ class HotelManagementViewModel : ViewModel() {
                 Log.e(TAG, "Error crítico durante la eliminación en cascada", e)
             }
         }
+    }
+
+    /**
+     * Recibe una lista de imágenes en formato ByteArray, las convierte a Base64
+     * y actualiza el hotel que está actualmente seleccionado para edición.
+     */
+
+    fun addImages(imageByteArrays: List<ByteArray>) {
+        // Nos aseguramos de que haya un hotel seleccionado para editar
+        val currentHotel = _selectedHotel.value ?: return
+
+        val base64Strings = imageByteArrays.map { byteArray ->
+            Base64.encodeToString(byteArray, Base64.DEFAULT)
+        }
+
+        //La UI que observa _selectedHotel que se actualizará automáticamente
+        _selectedHotel.value = currentHotel.copy(
+            images = currentHotel.images + base64Strings
+        )
     }
 
     fun cancelEdit() {

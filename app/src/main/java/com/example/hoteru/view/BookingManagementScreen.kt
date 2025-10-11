@@ -126,9 +126,7 @@ fun BookingManagementScreen(navController: NavController, hotelId: String?) {
                 bookingToEdit = bookingToEdit,
                 onDismiss = { showEditDialog = false },
                 onSave = { updatedBooking ->
-                    // <<< ERROR 1 CORREGIDO AQUÍ >>>
-                    // La función se llama `createBooking`, no `saveBooking`
-                    bookingViewModel.createBooking(updatedBooking)
+                    bookingViewModel.saveBooking(updatedBooking)
                     showEditDialog = false
                     if (!hotelId.isNullOrBlank()) {
                         bookingViewModel.loadActiveBookings(hotelId)

@@ -21,6 +21,9 @@ import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import com.example.hoteru.view.BookingManagementScreen
 import com.example.hoteru.view.DetailsHotelScreen
+import com.example.hoteru.view.ListOfHotels
+import com.example.hoteru.view.ListOfHotelsScreen
+import com.example.hoteru.view.ListOfReservationScreen
 
 import com.example.hoteru.view.MapScreen
 import com.example.hoteru.view.RegisterScreen
@@ -85,9 +88,9 @@ fun AppNavigation() {
                 navController.popBackStack()
             }
         }
-        composable("user_bookings/{userId}") { backStackEntry ->
+        composable("user_bookings") { backStackEntry ->
             val userId = backStackEntry.arguments?.getString("userId")
-            UserBookingsScreen(userId = userId)
+            ListOfReservationScreen(navController,  authViewModel)
         }
 
         composable("room_management") {
@@ -105,6 +108,12 @@ fun AppNavigation() {
             // Llama a MapScreen y le pasa los parámetros necesarios.
             // authViewModel ya está definido al inicio de AppNavigation, así que lo reutilizamos.
             MapScreen(navController = navController, authViewModel = authViewModel)
+        }
+
+        composable("listOfHotels") {
+            // Llama a MapScreen y le pasa los parámetros necesarios.
+            // authViewModel ya está definido al inicio de AppNavigation, así que lo reutilizamos.
+            ListOfHotelsScreen(navController = navController, authViewModel = authViewModel)
         }
         composable("detailshotel/{_id}/{name}/{idname}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("_id")

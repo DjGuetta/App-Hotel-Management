@@ -16,6 +16,7 @@ import MapViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.util.Base64
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -76,141 +77,6 @@ fun Base64Image(
         )
     }
 }
-
-//@Composable
-//fun DetailsHotelScreen(navController: NavController, hotelId: String?){
-//    val viewHotel: MapViewModel = viewModel()
-//    val hotel by viewHotel.onehotel.collectAsState()
-//    val rooms by viewHotel.rooms.collectAsState()
-//
-//    LaunchedEffect(hotelId){
-//        viewHotel.loadDetailsDocument("Hoteles", hotelId)
-//        viewHotel.loadRooms(hotelId)
-//
-//    }
-//    println("cuartos vista $rooms")
-//    println("cuartos vista $rooms")
-//    println("cuartos vista $rooms")
-//    println("cuartos vista $rooms")
-//    println("cuartos vista $rooms")
-//    println("cuartos vista $rooms")
-//    println("cuartos vista $rooms")
-//    println("cuartos vista $rooms")
-//    println("cuartos vista $rooms")
-//    println("cuartos vista $rooms")
-//    println("cuartos vista $rooms")
-//    println("cuartos vista $rooms")
-//
-//
-//
-//    val images = hotel?.get("images") as? List<String> ?: emptyList()
-//    print(images)
-//
-//    Column(modifier = Modifier.padding(16.dp)) {
-//        // Hotel data
-//        Text(
-//            text = hotel?.getString("name") ?: "not found..",
-//            style = MaterialTheme.typography.titleLarge
-//        )
-//        Text(
-//            text = hotel?.getString("description") ?: "",
-//            style = MaterialTheme.typography.bodyMedium
-//        )
-//        Text(
-//            text = hotel?.getString("contactEmail") ?: "",
-//            style = MaterialTheme.typography.bodyMedium
-//        )
-//        Text(
-//            text = hotel?.getString("contactPhone") ?: "",
-//            style = MaterialTheme.typography.bodyMedium
-//        )
-//
-//        // Hotel images
-//        LazyColumn {
-//            items(images) { img ->
-//                Base64Image(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .height(180.dp)
-//                        .clip(RoundedCornerShape(12.dp))
-//                        .padding(vertical = 4.dp),
-//                    base64 = img
-//                )
-//            }
-//        }
-//        Column(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(16.dp)
-//        ) {
-//            Text(
-//                text = "Habitaciones",
-//                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-//                color = MaterialTheme.colorScheme.primary,
-//                modifier = Modifier.padding(bottom = 12.dp)
-//            )
-//
-//            LazyColumn(
-//                verticalArrangement = Arrangement.spacedBy(12.dp)
-//            ) {
-//                items(rooms) { r ->
-//                    val id = when (val value = r["_id"]) {
-//                        is ObjectId -> value.toHexString()   // if it's ObjectId
-//                        is String -> value                    // if it's String
-//                        else -> null                          // fallback if _id is missing
-//                    }
-//                    Card(
-//                        modifier = Modifier.fillMaxWidth(),
-//                        shape = RoundedCornerShape(12.dp),
-//                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-//                        onClick = {
-//                            navController.navigate("detailsroom/$id")
-//                        }
-//                    ) {
-//                        Column(modifier = Modifier.padding(16.dp)) {
-////                            Text(
-////                                text = "Hotel: ${hotel?.getString("name ") ?: "Desconocido"}",
-////                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-////                            )
-//                            Text(
-//                                text = "Tipo: ${r.getString("roomType") ?: "Desconocido"}",
-//                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-//                            )
-//                            Spacer(modifier = Modifier.height(4.dp))
-//                            Text(
-//                                text = "Cantidad disponible: ${r.getInteger("capacity") ?: 0}",
-//                                style = MaterialTheme.typography.bodyMedium
-//                            )
-//                            Text(
-//                                text = "Precio: ${r.getInteger("pricePerNight") ?: 0} $",
-//                                style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF388E3C)) // green
-//                            )
-//                            Text(
-//                                text = "Precio: ${r.getInteger("status") ?: 0} $",
-//                                style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF388E3C)) // green
-//                            )
-//
-//                            Spacer(modifier = Modifier.height(8.dp))
-//
-//                            r.getString("image")?.takeIf { it.isNotBlank() }?.let { img ->
-//                                Base64Image(
-//                                    modifier = Modifier
-//                                        .fillMaxWidth()
-//                                        .height(160.dp)
-//                                        .clip(RoundedCornerShape(10.dp)),
-//                                    base64 = img
-//                                )
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//
-//    }
-//}
-//
-//
 
 @Composable
 fun CommentsScreen(
@@ -392,12 +258,6 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?, name: Str
 
 
         }
-
-
-
-
-
-
         // Hotel images
         items(images) { img ->
             Base64Image(
@@ -444,8 +304,11 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?, name: Str
             val status = r["status"]?.toString() ?: "VACIO"
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, Color.Black, RoundedCornerShape(12.dp)), // borde negro
                 shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 onClick = { navController.navigate("detailsroom/$id/$hotelId/$iduser") }
             ) {
@@ -464,10 +327,19 @@ fun DetailsHotelScreen(navController: NavController, hotelId: String?, name: Str
                         text = "Precio: $price $",
                         style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF388E3C))
                     )
-                    Text(
-                        text = "Estado: $status",
-                        style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF388E3C))
-                    )
+                    if (status == "OCUPADA"){
+                        Text(
+                            text = "Estado: $status",
+                            style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFFF44336))
+                        )
+
+                    }else{
+                        Text(
+                            text = "Estado: $status",
+                            style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF388E3C))
+                        )
+
+                    }
 
 
 

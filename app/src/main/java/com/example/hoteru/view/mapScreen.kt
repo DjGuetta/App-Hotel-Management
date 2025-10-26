@@ -17,20 +17,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
-import androidx.core.graphics.createBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -59,33 +53,19 @@ import com.google.maps.android.compose.MarkerInfoWindow
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
-import org.bson.Document
-import org.bson.types.ObjectId
-import androidx.compose.material3.*
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
-import com.google.maps.android.compose.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.*
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.material.icons.filled.Hotel
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import com.google.android.gms.maps.model.MapStyleOptions
 
 // --- FUNCIONES DE CONVERSIÓN ---
@@ -96,32 +76,6 @@ fun bitmapDescriptorFromVector(
     vectorResId: Int,
 ): BitmapDescriptor {
     val drawable = ContextCompat.getDrawable(context, vectorResId) ?: return BitmapDescriptorFactory.defaultMarker()
-
-    val bitmap = Bitmap.createBitmap(
-        drawable.intrinsicWidth,
-        drawable.intrinsicHeight,
-        Bitmap.Config.ARGB_8888
-    )
-
-    val canvas = Canvas(bitmap)
-    drawable.setBounds(0, 0, canvas.width, canvas.height)
-    drawable.draw(canvas)
-
-    return BitmapDescriptorFactory.fromBitmap(bitmap)
-}
-
-@Composable
-fun bitmapDescriptorFromVector(
-    context: Context,
-    vectorResId: Int,
-    tint: Color
-): BitmapDescriptor {
-    val drawable = ContextCompat.getDrawable(context, vectorResId) ?: return BitmapDescriptorFactory.defaultMarker()
-
-    // Aplicar tint si se especifica
-    if (tint != Color.Unspecified) {
-        drawable.setTint(tint.toArgb())
-    }
 
     val bitmap = Bitmap.createBitmap(
         drawable.intrinsicWidth,
@@ -224,51 +178,6 @@ fun SearchEngine(cameraPositionState: CameraPositionState) {
         }
     }
 }
-
-//@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
-//@Composable
-//fun DropdownListHotel(navController: NavController, DropDownItems: List<Hotel>, mapModel: MapViewModel) {
-//    var isExpanded by remember { mutableStateOf(false) }
-//    var selectedText by rememberSaveable { mutableStateOf(DropDownItems.firstOrNull()?.name ?: "") }
-//    val locationPermissionState = rememberPermissionState(
-//        Manifest.permission.ACCESS_FINE_LOCATION
-//    )
-//
-//    ExposedDropdownMenuBox(
-//        expanded = isExpanded,
-//        onExpandedChange = { isExpanded = !isExpanded }
-//    ) {
-//        OutlinedTextField(
-//            value = selectedText,
-//            onValueChange = {},
-//            readOnly = true,
-//            label = { Text("Selecciona un hotel") },
-//            trailingIcon = {
-//                ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded)
-//            },
-//            modifier = Modifier.menuAnchor()
-//        )
-//        ExposedDropdownMenu(
-//            expanded = isExpanded,
-//            onDismissRequest = { isExpanded = false }
-//        ) {
-//            DropDownItems.forEach { hotel ->
-//                DropdownMenuItem(
-//                    text = { Text(hotel.name) },
-//                    onClick = {
-//                        if (locationPermissionState.status.isGranted) {
-//                            selectedText = hotel.name
-//                            mapModel.setVisibilityWindow(false)
-//                        } else {
-//                            locationPermissionState.launchPermissionRequest()
-//                        }
-//                    },
-//                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-//                )
-//            }
-//        }
-//    }
-//}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -513,8 +422,9 @@ fun PriceFilter(navController: NavController, user: String?) {
 
 
 @Composable
-fun BottomNavigationBar(navControllerHost: NavController, authState: AuthState) {
+fun BottomNavigationBar(navControllerHost: NavController, authViewModel: AuthViewModel = viewModel()) {
     val currentRoute = navControllerHost.currentBackStackEntryAsState().value?.destination?.route
+    val authState by authViewModel.authState.collectAsState()
 
     // Usamos la propiedad `loginSuccess` que SÍ existe en tu AuthState.
     val loggedInUser = authState.loginSuccess
@@ -528,21 +438,36 @@ fun BottomNavigationBar(navControllerHost: NavController, authState: AuthState) 
         NavigationBarItem(
             selected = currentRoute == "home",
             onClick = { navControllerHost.navigate("home") },
-            icon = { Icon(Icons.Default.Place, contentDescription = "Map") },
+            icon = { Icon(Icons.Default.Place, contentDescription = "Mapa") },
             label = { Text("Mapa") },
             alwaysShowLabel = true,
             colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color.Black,
-                unselectedIconColor = Color.Gray,
-                selectedTextColor = Color.Black,
-                unselectedTextColor = Color.Gray
+                selectedIconColor = Color.Gray,
+                unselectedIconColor = Color.Black,
+                selectedTextColor = Color.Gray,
+                unselectedTextColor = Color.Black
+            )
+        )
+
+        // --- Item 2: Hoteles ---
+        NavigationBarItem(
+            selected = currentRoute == "listOfHotels",
+            onClick = { navControllerHost.navigate("listOfHotels") },
+            icon = { Icon(Icons.Default.Hotel, contentDescription = "Hoteles") },
+            label = { Text("Hoteles") },
+            alwaysShowLabel = true,
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color.Gray,
+                unselectedIconColor = Color.Black,
+                selectedTextColor = Color.Gray,
+                unselectedTextColor = Color.Black
             )
         )
 
         // --- Item 2: Reservaciones ---
         NavigationBarItem(
-            selected = currentRoute == "user_bookings/${authState.loginSuccess?.id ?: "idUsuario"}",
-            onClick = { navControllerHost.navigate("user_bookings/${authState.loginSuccess?.id ?: "idUsuario"}")},
+            selected = currentRoute == "user_bookings",
+            onClick = { navControllerHost.navigate("user_bookings")},
             icon = { Icon(Icons.Default.Book, contentDescription = "Reservations") },
             label = { Text("Reservaciones") }
         )
@@ -601,7 +526,7 @@ fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewM
     }
 
     Scaffold(
-        bottomBar = { BottomNavigationBar(navControllerHost = navController, authState = authState) }
+        bottomBar = { BottomNavigationBar(navControllerHost = navController, authViewModel) }
     ) { innerPadding ->
         ModalNavigationDrawer(
             drawerState = drawerState,

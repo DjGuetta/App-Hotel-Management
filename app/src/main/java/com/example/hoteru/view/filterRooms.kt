@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
 import org.bson.types.ObjectId
 
 
@@ -60,8 +61,10 @@ fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String
         Text(
             text = "Habitaciones Filtrada por precios",
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            textAlign = TextAlign.Center,
         )
 
         if (rooms.isEmpty()) {
@@ -84,8 +87,11 @@ fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String
                     val hotelDoc = idhotel?.let { hotelbyroom[it] }
 
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, Color.Black, RoundedCornerShape(12.dp)), // borde negro
                         shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                         onClick = { navController.navigate("detailsroom/$idroom/$idhotel/$user") }
                     ) {
@@ -107,10 +113,21 @@ fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String
                                 text = "Precio: ${r.getDouble("pricePerNight") ?: r.getInteger("pricePerNight") ?: 0} $",
                                 style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF388E3C))
                             )
-                            Text(
-                                text = "Disponibilidad: ${r.getString("status") ?: "VACIO"}",
-                                style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF388E3C))
-                            )
+
+                            val status = r.getString("status") ?: "VACIO"
+                            if (status == "OCUPADA"){
+                                Text(
+                                    text = "Estado: $status",
+                                    style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFFF44336))
+                                )
+
+                            }else{
+                                Text(
+                                    text = "Estado: $status",
+                                    style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF388E3C))
+                                )
+
+                            }
 
                             Spacer(modifier = Modifier.height(8.dp))
                             val imageList = r?.getList("images", String::class.java) ?: emptyList()
@@ -122,14 +139,8 @@ fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String
                                             base64 = img,
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .height(220.dp)
-                                                .clip(RoundedCornerShape(14.dp))
-                                                .border(
-                                                    width = 1.dp,
-                                                    color = Color(0xFFE0E0E0),
-                                                    shape = RoundedCornerShape(14.dp)
-                                                )
-                                                .padding(bottom = 10.dp)
+                                                .height(160.dp)
+                                                .clip(RoundedCornerShape(10.dp)),
                                         )
                                     }
                                 }

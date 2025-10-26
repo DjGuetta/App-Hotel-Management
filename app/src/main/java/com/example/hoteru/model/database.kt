@@ -46,7 +46,7 @@ import java.util.Calendar
 object MongoDBConnection {
 
 //    private const val CONNECTION_DATABASE = "mongodb://172.18.26.188:27017"
-    private const val CONNECTION_DATABASE = "mongodb://10.162.78.188:27017"
+    private const val CONNECTION_DATABASE = "mongodb://192.168.1.5:27017"
 
     private const val DATABASE_NAME = "Hoteru"
 

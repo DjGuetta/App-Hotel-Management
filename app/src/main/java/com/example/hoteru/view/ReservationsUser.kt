@@ -2,13 +2,19 @@ package com.example.hoteru.view
 
 import android.content.Context
 import android.graphics.Paint
+import com.example.hoteru.viewModel.MapViewModel as mp
+
 import android.graphics.pdf.PdfDocument
 import android.os.Environment
 import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,8 +24,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.hoteru.model.Booking
 import com.example.hoteru.model.User
+import com.example.hoteru.viewModel.AuthViewModel
 import com.example.hoteru.viewModel.BookinsUserExpose
 import com.example.hoteru.viewModel.GetUser
 import com.example.hoteru.viewModel.MapViewModel
@@ -33,16 +41,19 @@ import MapViewModel as Mv
 
 @Composable
 fun UserBookingsScreen(
-    userId: String?,
+    authViewModel: AuthViewModel = viewModel(),
     bookingViewModel: BookinsUserExpose = viewModel()
 ) {
+
     val bookings by bookingViewModel.userBookings.collectAsState()
     val loading by bookingViewModel.loading.collectAsState()
     val error by bookingViewModel.error.collectAsState()
+    val authState by authViewModel.authState.collectAsState()
+
 
     // Load bookings when screen starts
-    LaunchedEffect(userId) {
-        bookingViewModel.loadBookingsByUser(userId)
+    LaunchedEffect(authState.loginSuccess?.id) {
+        bookingViewModel.loadBookingsByUser(authState.loginSuccess?.id)
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -107,8 +118,11 @@ fun BookingCard(booking: Booking) {
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, Color.Black, RoundedCornerShape(12.dp)), // borde negro
         shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -154,9 +168,73 @@ fun BookingCard(booking: Booking) {
                 onClick = {
                     createBookingPdf(context, booking, dataH, dataR, userGot)
                 },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Black), // botón negro
                 modifier = Modifier.align(Alignment.End)
             ) {
-                Text("Descargar PDF")
+                Text("Descargar PDF", color = Color.White)
+            }
+        }
+    }
+}
+
+@Composable
+fun ListOfReservationScreen(navController: NavController, authViewModel: AuthViewModel = viewModel(),
+                            bookingViewModel: BookinsUserExpose = viewModel()) {
+    val mapModel: mp = viewModel()
+    val authState by authViewModel.authState.collectAsState()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+
+    Scaffold(
+        bottomBar = {
+            BottomNavigationBar(
+                navControllerHost = navController,
+                authViewModel
+            )
+        }
+    ) { innerPadding ->
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            gesturesEnabled = false,
+            drawerContent = {
+                DropDownListMenu(
+                    mapModel = mapModel,
+                    scope = scope,
+                    drawerState = drawerState
+                )
+            }
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+
+
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .background(Color.White)
+                ) {
+                    LaunchedEffect(authState.loginSuccess) {
+                        if (authState.loginSuccess == null) {
+                            navController.navigate("login") {
+                                popUpTo("home") { inclusive = true }
+                            }
+                        }
+                    }
+                    HeaderOfTheMap(
+                        userName = authState.loginSuccess?.firstName ?: "Usuario",
+                        onLogoutClick = { authViewModel.logout() } // ✅ triggers state reset
+                    )
+
+                    UserBookingsScreen(authViewModel, bookingViewModel = bookingViewModel)
+
+                }
+
+
             }
         }
     }

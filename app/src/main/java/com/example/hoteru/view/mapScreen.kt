@@ -64,6 +64,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 
 import com.google.android.gms.maps.model.MapStyleOptions
@@ -92,42 +93,59 @@ fun bitmapDescriptorFromVector(
 
 @Composable
 fun HeaderOfTheMap(userName: String, onLogoutClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(R.drawable.icono),
-                contentDescription = "AndeStay Icon",
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = "AndeStay",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Image(
+                    painter = painterResource(R.drawable.icono),
+                    contentDescription = "AndeStay Icon",
+                    modifier = Modifier.size(48.dp)
                 )
-                Text(
-                    text = "Bienvenido, $userName",
-                    fontSize = 14.sp,
-                    color = Color.Gray
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "AndeStay",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                    Text(
+                        text = "Bienvenido, $userName",
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                }
+            }
+            // --- BOTÓN DE LOGOUT ---
+            IconButton(onClick = onLogoutClick) {
+                Icon(
+                    imageVector = Icons.Default.ExitToApp,
+                    contentDescription = "Cerrar Sesión"
                 )
             }
+
         }
-        // --- BOTÓN DE LOGOUT ---
-        IconButton(onClick = onLogoutClick) {
-            Icon(
-                imageVector = Icons.Default.ExitToApp,
-                contentDescription = "Cerrar Sesión"
+
+        Box( modifier = Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0x33000000),
+                        Color(0x11000000),
+                        Color.Transparent)
+                )
             )
-        }
+        )
     }
+
 }
 
 
@@ -142,7 +160,7 @@ fun SearchEngine(cameraPositionState: CameraPositionState) {
         value = searchText,
         onValueChange = mapModel::onSearchTextChange,
         label = { Text("Busca Un Hotel") },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
         placeholder = { Text(text = "Busca Tu Hotel") },
     )
     Spacer(modifier = Modifier.height(16.dp))
@@ -257,7 +275,10 @@ fun DropdownListHotel(navController: NavController, DropDownItems: List<Hotel>, 
         drawerState: DrawerState
     ) {
         ModalDrawerSheet {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)) {
                 IconButton(
                     onClick = { CloseOrOpenDropDownListMenu(scope, drawerState) },
                     modifier = Modifier
@@ -314,7 +335,9 @@ fun PriceFilter(navController: NavController, user: String?) {
     var minimum by remember { mutableStateOf("") }
     var maximum by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .padding(top = 12.dp)) {
         Row {
             OutlinedTextField(
                 value = minimum,
@@ -373,9 +396,9 @@ fun PriceFilter(navController: NavController, user: String?) {
     }
 }
 
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    fun RatingFilter(navController: NavController) {
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RatingFilter(navController: NavController) {
         var expanded by remember { mutableStateOf(false) }
         val options = listOf("1⭐", "2⭐", "3⭐", "4⭐", "5⭐")
         var selectedOption by remember { mutableStateOf(options[0]) } // default: 1 star
@@ -383,7 +406,7 @@ fun PriceFilter(navController: NavController, user: String?) {
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().padding(top = 15.dp)
         ) {
             // Field showing current selection
             OutlinedTextField(
@@ -402,7 +425,8 @@ fun PriceFilter(navController: NavController, user: String?) {
             // Dropdown options
             ExposedDropdownMenu(
                 expanded = expanded,
-                onDismissRequest = { expanded = false }
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.background(Color.White)
             ) {
                 options.forEach { option ->
                     DropdownMenuItem(
@@ -532,7 +556,7 @@ fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewM
             drawerState = drawerState,
             gesturesEnabled = false,
             drawerContent = {
-                DropDownListMenu(mapModel = mapModel, scope, drawerState)
+                    DropDownListMenu(mapModel = mapModel, scope, drawerState)
             }
         ) {
             Box(

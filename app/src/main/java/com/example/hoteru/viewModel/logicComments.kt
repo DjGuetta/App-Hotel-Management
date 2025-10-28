@@ -7,6 +7,7 @@ import com.example.hoteru.model.MongoDBConnection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.w3c.dom.Document
 import kotlin.collections.toList
@@ -15,12 +16,25 @@ class logicComments : ViewModel() {
     private val _comments = MutableStateFlow<List<Comment>>(emptyList())
     val comments: StateFlow<List<Comment>> = _comments
 
+    private val _commentsByHotel = MutableStateFlow<Map<String, List<Comment>>>(emptyMap())
+    val commentsByHotel: StateFlow<Map<String, List<Comment>>> = _commentsByHotel
+
     fun loadComments(hotelId: String?) {
         viewModelScope.launch(Dispatchers.IO) {
             val results = MongoDBConnection.getComments(hotelId)
             _comments.value = results
         }
     }
+
+    fun loadCommentsByHotel(hotelId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val results = MongoDBConnection.getComments(hotelId)
+            _commentsByHotel.update { current ->
+                current + (hotelId to results)
+            }
+        }
+    }
+
 
 
     fun insertComment(comment: Comment) {

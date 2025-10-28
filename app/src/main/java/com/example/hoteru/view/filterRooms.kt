@@ -59,7 +59,7 @@ fun RoomsByPrice(navController: NavController, minimum: String?, maximum: String
             .padding(16.dp)
     ) {
         Text(
-            text = "Habitaciones Filtrada por precios",
+            text = "Habitaciones Filtradas por precios",
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
             modifier = Modifier
                 .fillMaxWidth()

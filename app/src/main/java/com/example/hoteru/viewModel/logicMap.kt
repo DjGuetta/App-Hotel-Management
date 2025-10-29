@@ -10,6 +10,7 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.CameraPositionState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 //import com.google.maps.android.compose.rememberCameraPositionState
 // Import for coroutines with a specific dispatcher for background work
 // Import for launching coroutines
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 // Import for working with MongoDB documents
 import org.bson.Document
 import kotlin.let
@@ -145,18 +147,21 @@ class MapViewModel : ViewModel() {
         // English: Launch a coroutine in the ViewModel's scope on the IO dispatcher.
         // Español: Lanza una corrutina en el ámbito del ViewModel en el despachador IO.
         viewModelScope.launch(Dispatchers.IO) {
-
-            // English: Get the MongoDB collection named "Hotel".
-            // Español: Obtiene la colección de MongoDB llamada "Hotel".
             val collection = MongoDBConnection.getCollection("Hoteles")
 
-            // English: Fetch all documents and convert them to a list.
-            // Español: Obtiene todos los documentos y los convierte en una lista.
-            val results = collection.find().toList()
+            // Poll the database every few seconds for changes
+            while (isActive) {
+                try {
+                    val newList = collection.find().toList()
+                    if (newList != _hotels.value) {
+                        _hotels.value = newList
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
 
-            // English: Update the StateFlow value so observers receive the new data.
-            // Español: Actualiza el valor de StateFlow para que los observadores reciban los nuevos datos.
-            _hotels.value = results
+                delay(5000) // Check for updates every 5 seconds
+            }
         }
     }
 

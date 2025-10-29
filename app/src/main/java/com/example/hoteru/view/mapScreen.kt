@@ -585,7 +585,7 @@ fun MapScreen(navController: NavController, authViewModel: AuthViewModel = viewM
                             state = markerState,
                             icon = bitmapDescriptorFromVector(LocalContext.current, R.drawable.h),
                             onInfoWindowClick = {
-                                navController.navigate("detailshotel/${hotel._id.toHexString()}/${authState.loginSuccess?.firstName ?: "Usuario"}/${authState.loginSuccess?.id ?: "idUsuario"}")
+                                navController.navigate("detailshotel/${hotel._id}/${authState.loginSuccess?.firstName ?: "Usuario"}/${authState.loginSuccess?.id ?: "idUsuario"}")
                             }
                         ) { marker ->
                             Column(

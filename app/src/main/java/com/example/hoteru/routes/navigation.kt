@@ -119,8 +119,6 @@ fun AppNavigation() {
             val id = backStackEntry.arguments?.getString("_id")
             val name = backStackEntry.arguments?.getString("name")
             val user = backStackEntry.arguments?.getString("idname")
-
-
             DetailsHotelScreen(navController, id, name, user)
         }
         composable("detailsroom/{_idroom}/{_idhotel}/{idname}") { backStackEntry ->
